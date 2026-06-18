@@ -1,0 +1,302 @@
+You are a senior UI/UX designer and full-stack developer.
+
+Build a premium, modern, and high-conversion fashion e-commerce website for:
+
+Kasthuribai Ready Mades
+
+
+-----------------------------------
+
+🎯 GOAL:
+
+Create a stylish, brand-level website that:
+
+- Positions the shop as a premium fashion brand
+- Attracts both offline & online customers
+- Builds strong trust using legacy + reviews
+- Enables easy product browsing & WhatsApp ordering
+
+Focus on:
+- Premium look & feel
+- Clean fashion UI
+- Conversion (orders + store visits)
+- Mobile-first experience
+
+
+-----------------------------------
+
+🏬 BRAND CONTEXT:
+
+- Name: Kasthuribai Ready Mades
+- Location: Chidambaram, Tamil Nadu
+- Legacy: Since 1930s (NMP group heritage)
+- Tagline: “Style Meets Comfort”
+
+Brand Identity:
+- Trusted family clothing store
+- Affordable + trendy collections
+- Strong reputation (100+ reviews)
+
+
+-----------------------------------
+
+🎨 DESIGN STYLE:
+
+Theme Options (choose one):
+
+Option 1:
+- Soft Pink (#F8C8DC) + White → Elegant boutique feel
+
+Option 2:
+- Black (#0B0B0B) + Gold (#D4AF37) → Premium luxury brand
+
+UI Feel:
+- Clean & minimal
+- Fashion boutique style
+- Premium spacing
+- Smooth interactions
+
+
+-----------------------------------
+
+🖼️ VISUAL DESIGN:
+
+- Use real clothing & shop images
+- Lifestyle fashion photos (models preferred)
+- Soft lighting aesthetics
+- Clean product cards
+- Minimal icons
+
+Effects:
+- Image zoom on hover
+- Smooth fade animations
+- Elegant transitions
+
+NO:
+- Cluttered layouts
+- Cheap-looking colors
+
+
+-----------------------------------
+
+📄 PAGES / SECTIONS:
+
+Single-page modern layout (or multi-page optional)
+
+Home | About | Categories | Products | Offers | Gallery | Reviews | Contact
+
+
+-----------------------------------
+
+🏠 HERO SECTION:
+
+- Full-width fashion banner
+- Title:
+  “Kasthuribai Ready Mades”
+
+- Subtitle:
+  “Trendy Fashion for Every Occasion”
+
+- Tagline:
+  “Style Meets Comfort”
+
+- CTA Buttons:
+  - “Shop Now”
+  - “Visit Store”
+
+- Add subtle zoom + fade animation
+
+
+-----------------------------------
+
+📖 ABOUT SECTION:
+
+Include legacy story:
+
+“Kasthuribai Ready Mades is built on decades of trust and experience from the NMP group, serving customers since the 1930s. We offer stylish, affordable clothing for men, women, and kids with a focus on quality and comfort.”
+
+Add:
+- “100+ Happy Customers”
+- “Affordable Pricing”
+- “Trusted Family Store”
+
+
+-----------------------------------
+
+🛍️ CATEGORIES SECTION:
+
+Interactive cards:
+
+- Men’s Wear
+- Women’s Wear
+- Kids Wear
+- Traditional Wear
+
+Hover:
+- scale + shadow + overlay
+
+
+-----------------------------------
+
+🧥 PRODUCTS SECTION:
+
+Grid layout with demo products:
+
+- Cotton Shirt – ₹799
+- Designer Saree – ₹1499
+- Kurti – ₹899
+- Kids T-shirt – ₹399
+- Silk Saree – ₹2499
+- Party Wear Gown – ₹1999
+
+Each product:
+- Image
+- Name
+- Price
+- “Add to Cart” button
+- “Order via WhatsApp” button
+
+
+-----------------------------------
+
+🛒 CART FEATURE:
+
+- Add/remove items
+- Show total price
+- Slide-in cart UI
+- Simple clean interaction
+
+
+-----------------------------------
+
+🔥 SPECIAL SECTIONS:
+
+1. New Arrivals  
+2. Today’s Offers (highlight banner)  
+3. Best Sellers  
+
+Add badges:
+- “Hot”
+- “Sale”
+- “Trending”
+
+
+-----------------------------------
+
+🎥 VIDEO SECTION:
+
+Heading:
+“Take a Look Inside Our Store”
+
+- Embed shop walkthrough video
+
+
+-----------------------------------
+
+🖼️ GALLERY:
+
+- Grid layout
+- Store images
+- Product collections
+- Lightbox preview
+
+
+-----------------------------------
+
+⭐ CUSTOMER REVIEWS:
+
+Add strong testimonials:
+
+- “Affordable price and super collections!”
+- “Best shop for family shopping”
+- “New shop but very trendy designs”
+
+Add:
+- Star ratings
+- Clean card UI
+
+
+-----------------------------------
+
+📞 CONTACT SECTION:
+
+Include:
+
+- Address: Chidambaram, Tamil Nadu
+- Phone number
+- WhatsApp button
+- Google Maps embed
+
+Form:
+- Name
+- Phone
+- Message
+
+
+-----------------------------------
+
+📱 WHATSAPP INTEGRATION:
+
+- Floating WhatsApp button
+- “Order via WhatsApp” per product
+- Auto message:
+  “Hi, I want to order [Product Name]”
+
+
+-----------------------------------
+
+✨ ANIMATIONS:
+
+- Smooth scroll (AOS)
+- Fade-in sections
+- Hover zoom effects
+- Button ripple effect
+
+
+-----------------------------------
+
+🌙 EXTRA FEATURES:
+
+- Dark mode toggle
+- Search & filter option
+- Sticky navbar
+- Mobile-first design
+
+
+-----------------------------------
+
+⚙️ TECH STACK:
+
+- HTML + CSS + JavaScript (single file)
+OR
+- Next.js + Tailwind (advanced)
+
+Libraries:
+- AOS (animation)
+- Swiper.js (carousel)
+
+
+-----------------------------------
+
+⚠️ IMPORTANT:
+
+- Make it look like a BRAND (not local shop)
+- Keep UI clean & premium
+- Focus on product visuals
+- Optimize for mobile users
+
+
+-----------------------------------
+
+🎯 FINAL GOAL:
+
+Make users feel:
+
+- “This is a premium fashion store”
+- “Prices are affordable”
+- “I want to visit or order now”
+
+Drive action:
+👉 Order via WhatsApp
+👉 Visit store
+👉 Browse products

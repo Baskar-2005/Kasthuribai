@@ -1,0 +1,18 @@
+packages:
+  "framer-motion": "For premium smooth scroll reveals and page transitions"
+  "zustand": "For elegant global state management of the shopping cart"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes safely"
+
+images:
+  - path: "artifacts/kasthuribai/public/images/hero-bg.png"
+    description: "Luxurious abstract black and gold silk fabric texture with soft dramatic lighting"
+    aspect_ratio: "16:9"
+  - path: "artifacts/kasthuribai/public/images/offer-bg.png"
+    description: "Elegant dark gold premium geometric pattern background, luxury fashion style"
+    aspect_ratio: "16:9"
+
+notes:
+  - "Building a fully functional single-page premium e-commerce site with internal scrolling."
+  - "Using Zustand for local cart state, simulating a full shopping experience."
+  - "WhatsApp integration uses wa.me links with pre-filled text."
