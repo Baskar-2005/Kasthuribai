@@ -1,6 +1,6 @@
 [build]
   base    = "."
-  command = "pnpm install && pnpm --filter @workspace/kasthuribai run build"
+command = "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/kasthuribai run build"
   publish = "artifacts/kasthuribai/dist/public"
 
 [build.environment]
