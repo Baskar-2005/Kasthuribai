@@ -15,7 +15,7 @@ services:
       - key: RAZORPAY_KEY_SECRET
         sync: false
       - key: CORS_ORIGIN
-        value: https://your-netlify-site.netlify.app
+        value: https://kasthuri-bai.netlify.app
       - key: LOG_LEVEL
         value: info
     healthCheckPath: /api/health
