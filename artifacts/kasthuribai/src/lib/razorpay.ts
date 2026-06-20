@@ -4,7 +4,7 @@ import { CartItem } from "@/store/use-cart";
 const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
 // API base URL - adjust based on your environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://kasthuribai.onrender.com/api";
 
 declare global {
   interface Window {
