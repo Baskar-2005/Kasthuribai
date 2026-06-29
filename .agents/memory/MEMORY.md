@@ -1,0 +1,1 @@
+- [Admin Dashboard](admin-dashboard.md) — password-protected at /admin; password is kasthuribai@admin; uses Zustand orders store (localStorage), not API server.

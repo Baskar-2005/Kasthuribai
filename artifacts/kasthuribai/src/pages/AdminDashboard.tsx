@@ -1,552 +1,619 @@
 import { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useOrders, OrderStatus } from "@/store/use-orders";
 import { formatPrice } from "@/lib/utils";
 import {
-  LayoutDashboard, Package, Users, Truck, TrendingUp, Search,
-  ChevronDown, ChevronRight, CheckCircle2, Clock, AlertCircle,
-  XCircle, RefreshCcw, ArrowLeft, Eye, Filter, Download,
+  ShoppingBag, Package, Truck, CheckCircle2, XCircle, Clock,
+  RefreshCw, LogOut, ChevronDown, Search, User, Phone, Mail,
+  MapPin, CreditCard, Calendar, AlertCircle, FlaskConical,
+  Star, TrendingUp,
 } from "lucide-react";
 import { Link } from "wouter";
 
-// ── Status config ─────────────────────────────────────────────────────────
+// ── Admin token (change this to your secret) ─────────────────────────────
+const ADMIN_TOKEN = "kasthuribai@admin";
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string; icon: typeof CheckCircle2 }> = {
-  pending:          { label: "Pending",          color: "text-amber-700",   bg: "bg-amber-100",   icon: Clock         },
-  confirmed:        { label: "Confirmed",        color: "text-blue-700",    bg: "bg-blue-100",    icon: CheckCircle2  },
-  processing:       { label: "Processing",       color: "text-indigo-700",  bg: "bg-indigo-100",  icon: RefreshCcw    },
-  shipped:          { label: "Shipped",          color: "text-violet-700",  bg: "bg-violet-100",  icon: Truck         },
-  out_for_delivery: { label: "Out for Delivery", color: "text-orange-700",  bg: "bg-orange-100",  icon: Truck         },
-  delivered:        { label: "Delivered",        color: "text-green-700",   bg: "bg-green-100",   icon: CheckCircle2  },
-  cancelled:        { label: "Cancelled",        color: "text-red-700",     bg: "bg-red-100",     icon: XCircle       },
+// ── Status config ─────────────────────────────────────────────────────────
+const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string; icon: typeof Clock }> = {
+  pending:          { label: "Pending",          color: "#d97706", bg: "rgba(217,119,6,0.1)",   icon: Clock        },
+  confirmed:        { label: "Confirmed",        color: "#2563eb", bg: "rgba(37,99,235,0.1)",   icon: CheckCircle2 },
+  processing:       { label: "Processing",       color: "#6d28d9", bg: "rgba(109,40,217,0.1)",  icon: RefreshCw    },
+  shipped:          { label: "Shipped",          color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  icon: Truck        },
+  out_for_delivery: { label: "Out for Delivery", color: "#ea580c", bg: "rgba(234,88,12,0.1)",   icon: Truck        },
+  delivered:        { label: "Delivered",        color: "#16a34a", bg: "rgba(22,163,74,0.1)",   icon: Package      },
+  cancelled:        { label: "Cancelled",        color: "#dc2626", bg: "rgba(220,38,38,0.1)",   icon: XCircle      },
 };
 
-const STATUS_FLOW: OrderStatus[] = ["pending","confirmed","processing","shipped","out_for_delivery","delivered"];
+const ALL_STATUSES = Object.keys(STATUS_CONFIG) as OrderStatus[];
 
-type Tab = "overview" | "orders" | "customers" | "shipping";
+// ── Demo orders to pre-populate ───────────────────────────────────────────
+const DEMO_ORDERS = [
+  {
+    id: `ORD-DEMO-001`,
+    razorpayOrderId: "pay_demo_Qk9xZ3mVc",
+    razorpayPaymentId: "pay_demo_Qk9xZ3mVc",
+    customerName: "Karthik Rajan",
+    customerEmail: "karthik@example.com",
+    customerPhone: "9876543210",
+    shippingAddress: "14, Nehru Street, Cuddalore - 607001, Tamil Nadu",
+    totalAmount: 3299,
+    status: "delivered" as OrderStatus,
+    items: [
+      { id: "p1", name: "Pure Cotton Formal Shirt", category: "Men", price: 799, quantity: 2, image: "", rating: 4.5, reviewCount: 128 },
+      { id: "p2", name: "Embroidered Kurti Set", category: "Women", price: 899, quantity: 1, image: "", rating: 4.3, reviewCount: 74 },
+    ],
+    trackingSteps: [],
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: `ORD-DEMO-002`,
+    razorpayOrderId: "pay_demo_Lp7wYn2bAj",
+    razorpayPaymentId: "pay_demo_Lp7wYn2bAj",
+    customerName: "Meena Sundaram",
+    customerEmail: "meena.s@gmail.com",
+    customerPhone: "9444112233",
+    shippingAddress: "7/3, Raja Nagar, Chidambaram - 608001, Tamil Nadu",
+    totalAmount: 2499,
+    status: "shipped" as OrderStatus,
+    items: [
+      { id: "p3", name: "Kanjeevaram Silk Saree", category: "Traditional", price: 2499, quantity: 1, image: "", rating: 4.8, reviewCount: 89 },
+    ],
+    trackingSteps: [],
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: `ORD-DEMO-003`,
+    razorpayOrderId: "",
+    razorpayPaymentId: null,
+    customerName: "Selvam Murugan",
+    customerEmail: "",
+    customerPhone: "8012345678",
+    shippingAddress: "22, Fishermen Colony, Cuddalore Port - 607003, Tamil Nadu",
+    totalAmount: 1198,
+    status: "confirmed" as OrderStatus,
+    items: [
+      { id: "p4", name: "Kids Essential T-shirt Pack", category: "Kids", price: 399, quantity: 3, image: "", rating: 4.6, reviewCount: 156 },
+    ],
+    trackingSteps: [],
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: `ORD-DEMO-004`,
+    razorpayOrderId: "",
+    razorpayPaymentId: null,
+    customerName: "Priya Anand",
+    customerEmail: "priya.a@outlook.com",
+    customerPhone: "9500667788",
+    shippingAddress: "5, Gandhi Road, Villupuram - 605602, Tamil Nadu",
+    totalAmount: 1499,
+    status: "pending" as OrderStatus,
+    items: [
+      { id: "p5", name: "Designer Georgette Saree", category: "Women", price: 1499, quantity: 1, image: "", rating: 4.2, reviewCount: 52 },
+    ],
+    trackingSteps: [],
+    createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: `ORD-DEMO-005`,
+    razorpayOrderId: "pay_demo_Cq2xJn9pFr",
+    razorpayPaymentId: "pay_demo_Cq2xJn9pFr",
+    customerName: "Ravi Kumar",
+    customerEmail: "ravi.k@yahoo.com",
+    customerPhone: "7299001122",
+    shippingAddress: "88, Anna Salai, Chennai - 600002, Tamil Nadu",
+    totalAmount: 5997,
+    status: "processing" as OrderStatus,
+    items: [
+      { id: "p6", name: "Party Wear Evening Gown", category: "Festive", price: 1999, quantity: 3, image: "", rating: 4.4, reviewCount: 43 },
+    ],
+    trackingSteps: [],
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
 
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
-function StatusBadge({ status }: { status: OrderStatus }) {
-  const cfg = STATUS_CONFIG[status];
-  const Icon = cfg.icon;
+function fmt(iso: string) {
+  const d = new Date(iso);
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${cfg.bg} ${cfg.color}`}>
-      <Icon className="w-3 h-3" />
-      {cfg.label}
-    </span>
+    d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) +
+    " · " +
+    d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })
   );
 }
 
-// ── Stat card ─────────────────────────────────────────────────────────────
+// ── Login Screen ──────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }: { onLogin: () => void }) {
+  const [input, setInput] = useState("");
+  const [error, setError] = useState("");
 
-function StatCard({ icon: Icon, label, value, sub, color }: {
-  icon: typeof TrendingUp; label: string; value: string; sub: string; color: string;
-}) {
-  return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      <div>
-        <p className="text-2xl font-bold text-gray-900 font-display">{value}</p>
-        <p className="text-sm font-semibold text-gray-700">{label}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
-      </div>
-    </div>
-  );
-}
-
-// ── Order detail panel ────────────────────────────────────────────────────
-
-function OrderDetail({ orderId, onClose }: { orderId: string; onClose: () => void }) {
-  const { orders, updateOrderStatus } = useOrders();
-  const order = orders.find((o) => o.id === orderId);
-  if (!order) return null;
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (input === ADMIN_TOKEN) {
+      sessionStorage.setItem("kb_admin_auth", "1");
+      onLogin();
+    } else {
+      setError("Incorrect admin password. Try kasthuribai@admin");
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.5)" }}>
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
-          <div>
-            <p className="font-bold text-gray-900">Order #{order.id.slice(-8).toUpperCase()}</p>
-            <p className="text-xs text-gray-400">{formatDate(order.createdAt)}</p>
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+      background: "linear-gradient(135deg, hsl(4,60%,10%) 0%, hsl(18,45%,12%) 100%)",
+      fontFamily: "Poppins, system-ui, sans-serif", padding: 24,
+    }}>
+      <motion.div
+        initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
+        style={{
+          width: "100%", maxWidth: 380, borderRadius: 24,
+          background: "hsl(30,100%,98%)", boxShadow: "0 32px 80px rgba(0,0,0,0.5)",
+          padding: "36px 32px",
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 16, margin: "0 auto 16px",
+            background: "rgba(181,58,46,0.12)", display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <ShoppingBag size={26} color="hsl(4,60%,44%)" />
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
-            <XCircle className="w-4 h-4 text-gray-600" />
+          <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4, color: "hsl(18,18%,14%)" }}>
+            Admin Dashboard
+          </h1>
+          <p style={{ fontSize: 13, color: "hsl(25,38%,45%)" }}>Kasthuribai Ready Mades · Orders</p>
+        </div>
+        <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(25,38%,45%)", display: "block", marginBottom: 6 }}>
+              Admin Password
+            </label>
+            <input
+              type="password" placeholder="Enter admin password"
+              value={input} onChange={(e) => setInput(e.target.value)} required
+              style={{
+                width: "100%", padding: "11px 14px", borderRadius: 12, fontSize: 14,
+                border: `1.5px solid ${error ? "hsl(0,84%,60%)" : "rgba(139,94,60,0.2)"}`,
+                outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit",
+                color: "hsl(18,18%,14%)", background: "white",
+              }}
+            />
+            {error && (
+              <p style={{ fontSize: 12, color: "hsl(0,84%,50%)", marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
+                <AlertCircle size={12} /> {error}
+              </p>
+            )}
+          </div>
+          <button type="submit" style={{
+            padding: "13px", borderRadius: 14, border: "none",
+            background: "linear-gradient(135deg, hsl(4,65%,48%), hsl(4,60%,38%))",
+            color: "#FFF9F0", fontWeight: 700, fontSize: 15, cursor: "pointer",
+            fontFamily: "inherit", boxShadow: "0 6px 20px rgba(181,58,46,0.3)",
+          }}>
+            Sign In
           </button>
-        </div>
-
-        <div className="p-6 space-y-5">
-          {/* Status stepper */}
-          <div>
-            <p className="text-sm font-bold text-gray-700 mb-3">Update Status</p>
-            <div className="flex flex-wrap gap-2">
-              {STATUS_FLOW.map((s) => (
-                <button key={s}
-                  onClick={() => updateOrderStatus(order.id, s)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${order.status === s ? "bg-primary text-white border-primary" : "bg-gray-50 text-gray-600 border-gray-200 hover:border-primary hover:text-primary"}`}>
-                  {STATUS_CONFIG[s].label}
-                </button>
-              ))}
-              <button onClick={() => updateOrderStatus(order.id, "cancelled")}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${order.status === "cancelled" ? "bg-red-500 text-white border-red-500" : "bg-gray-50 text-gray-500 border-gray-200 hover:border-red-400 hover:text-red-500"}`}>
-                Cancel
-              </button>
-            </div>
-          </div>
-
-          {/* Customer */}
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Customer Details</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div><p className="text-[10px] text-gray-400">Name</p><p className="text-sm font-semibold text-gray-800">{order.customerName}</p></div>
-              <div><p className="text-[10px] text-gray-400">Email</p><p className="text-sm font-semibold text-gray-800 break-all">{order.customerEmail}</p></div>
-              <div><p className="text-[10px] text-gray-400">Phone</p><p className="text-sm font-semibold text-gray-800">{order.customerPhone}</p></div>
-              <div><p className="text-[10px] text-gray-400">Current Status</p><StatusBadge status={order.status} /></div>
-            </div>
-          </div>
-
-          {/* Shipping address */}
-          <div className="bg-blue-50 rounded-2xl p-4">
-            <p className="text-xs font-bold text-blue-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Truck className="w-3.5 h-3.5" /> Shipping Address
-            </p>
-            <p className="text-sm text-gray-700 leading-relaxed">{order.shippingAddress}</p>
-          </div>
-
-          {/* Items */}
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Order Items</p>
-            <div className="space-y-2.5">
-              {order.items.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
-                  <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-200" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
-                    <p className="text-xs text-gray-400">{item.category} · Qty: {item.quantity}</p>
-                  </div>
-                  <p className="text-sm font-bold text-gray-900 flex-shrink-0">{formatPrice(item.price * item.quantity)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Total */}
-          <div className="bg-gradient-to-r from-primary/10 to-gold/10 rounded-2xl p-4 flex items-center justify-between">
-            <p className="font-bold text-gray-700">Total Amount</p>
-            <p className="text-2xl font-bold text-primary font-display">{formatPrice(order.totalAmount)}</p>
-          </div>
-
-          {/* Tracking steps */}
-          <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Tracking Timeline</p>
-            <div className="space-y-2">
-              {order.trackingSteps.filter(s => s.completed).map((step) => (
-                <div key={step.status} className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle2 className="w-3 h-3 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">{step.label}</p>
-                    {step.timestamp && <p className="text-[10px] text-gray-400">{formatDate(step.timestamp)}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+          <p style={{ textAlign: "center", fontSize: 11, color: "hsl(25,38%,55%)", marginTop: 4 }}>
+            <Link href="/" style={{ color: "hsl(4,60%,44%)", textDecoration: "none" }}>← Back to Store</Link>
+          </p>
+        </form>
+      </motion.div>
     </div>
   );
 }
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────
-
 export default function AdminDashboard() {
-  const { orders, updateOrderStatus } = useOrders();
-  const [tab, setTab] = useState<Tab>("overview");
+  const { orders, addOrder, updateOrderStatus } = useOrders();
+
+  const [loggedIn, setLoggedIn] = useState(() => sessionStorage.getItem("kb_admin_auth") === "1");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all");
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<OrderStatus | "all">("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+
+  function handleLogin() { setLoggedIn(true); }
+  function logout() { sessionStorage.removeItem("kb_admin_auth"); setLoggedIn(false); }
+
+  async function seedDemo() {
+    setSeeding(true);
+    for (const demo of DEMO_ORDERS) {
+      if (!orders.find((o) => o.id === demo.id)) {
+        // @ts-ignore – demo items match CartItem shape closely enough
+        addOrder(demo as any);
+      }
+    }
+    setLastRefreshed(new Date());
+    await new Promise((r) => setTimeout(r, 600));
+    setSeeding(false);
+  }
+
+  function handleUpdateStatus(orderId: string, status: OrderStatus) {
+    setUpdatingId(orderId);
+    updateOrderStatus(orderId, status);
+    setTimeout(() => setUpdatingId(null), 400);
+  }
 
   // ── Stats ──
-  const stats = useMemo(() => {
-    const total = orders.length;
-    const revenue = orders.filter(o => o.status !== "cancelled").reduce((s, o) => s + o.totalAmount, 0);
-    const pending = orders.filter(o => ["pending","confirmed","processing"].includes(o.status)).length;
-    const shipped = orders.filter(o => ["shipped","out_for_delivery"].includes(o.status)).length;
-    const delivered = orders.filter(o => o.status === "delivered").length;
-    const customers = new Set(orders.map(o => o.customerEmail)).size;
-    return { total, revenue, pending, shipped, delivered, customers };
-  }, [orders]);
+  const stats = useMemo(() => ({
+    total:     orders.length,
+    pending:   orders.filter((o) => o.status === "pending").length,
+    confirmed: orders.filter((o) => o.status === "confirmed").length,
+    shipped:   orders.filter((o) => ["shipped", "out_for_delivery"].includes(o.status)).length,
+    delivered: orders.filter((o) => o.status === "delivered").length,
+    revenue:   orders.filter((o) => o.status !== "cancelled").reduce((s, o) => s + o.totalAmount, 0),
+  }), [orders]);
 
-  // ── Unique customers ──
-  const customers = useMemo(() => {
-    const map = new Map<string, { name: string; email: string; phone: string; orders: number; total: number; lastOrder: string }>();
-    orders.forEach((o) => {
-      if (map.has(o.customerEmail)) {
-        const c = map.get(o.customerEmail)!;
-        c.orders++;
-        c.total += o.totalAmount;
-        if (o.createdAt > c.lastOrder) c.lastOrder = o.createdAt;
-      } else {
-        map.set(o.customerEmail, { name: o.customerName, email: o.customerEmail, phone: o.customerPhone, orders: 1, total: o.totalAmount, lastOrder: o.createdAt });
-      }
-    });
-    return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [orders]);
-
-  // ── Filtered orders ──
-  const filteredOrders = useMemo(() => {
+  // ── Filtered list ──
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
     return orders.filter((o) => {
-      const q = search.toLowerCase();
-      const matchSearch = !q || o.customerName.toLowerCase().includes(q) || o.customerEmail.toLowerCase().includes(q) || o.id.toLowerCase().includes(q) || o.customerPhone.includes(q);
-      const matchStatus = statusFilter === "all" || o.status === statusFilter;
-      return matchSearch && matchStatus;
+      const matchStatus = filterStatus === "all" || o.status === filterStatus;
+      const matchSearch = !q ||
+        o.id.toLowerCase().includes(q) ||
+        o.customerName.toLowerCase().includes(q) ||
+        o.customerPhone.includes(q) ||
+        o.customerEmail.toLowerCase().includes(q) ||
+        (o.razorpayPaymentId || "").toLowerCase().includes(q);
+      return matchStatus && matchSearch;
     });
-  }, [orders, search, statusFilter]);
+  }, [orders, search, filterStatus]);
 
-  const TABS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
-    { id: "overview",   label: "Overview",   icon: LayoutDashboard },
-    { id: "orders",     label: "Orders",     icon: Package          },
-    { id: "customers",  label: "Customers",  icon: Users            },
-    { id: "shipping",   label: "Shipping",   icon: Truck            },
-  ];
+  if (!loggedIn) return <LoginScreen onLogin={handleLogin} />;
 
+  // ─── Dashboard UI ──────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 font-body">
-      {/* Top bar */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-1.5 text-gray-400 hover:text-primary transition-colors text-sm">
-              <ArrowLeft className="w-4 h-4" /> Back to Store
-            </Link>
-            <span className="text-gray-200">|</span>
-            <div>
-              <span className="font-display font-bold text-gray-900 text-lg">Admin Dashboard</span>
-              <span className="ml-2 bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Kasthuribai</span>
-            </div>
+    <div style={{ minHeight: "100vh", background: "hsl(30,60%,96%)", fontFamily: "Poppins, system-ui, sans-serif" }}>
+
+      {/* ── Top bar ── */}
+      <div style={{
+        background: "hsl(4,60%,12%)", padding: "0 24px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        height: 60, position: "sticky", top: 0, zIndex: 50,
+        boxShadow: "0 2px 12px rgba(0,0,0,0.25)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{
+            width: 34, height: 34, borderRadius: 10,
+            background: "rgba(255,249,240,0.12)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <ShoppingBag size={18} color="#FFF9F0" />
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-xs text-gray-500">Live</span>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "#FFF9F0", lineHeight: 1 }}>Kasthuribai</p>
+            <p style={{ fontSize: 11, color: "rgba(255,249,240,0.45)", marginTop: 2 }}>Admin Dashboard</p>
           </div>
         </div>
 
-        {/* Tab navigation */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex gap-1 overflow-x-auto pb-0" style={{ scrollbarWidth: "none" }}>
-          {TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${tab === t.id ? "border-primary text-primary" : "border-transparent text-gray-500 hover:text-gray-800"}`}>
-              <t.icon className="w-4 h-4" />
-              {t.label}
-              {t.id === "orders" && orders.length > 0 && (
-                <span className="bg-primary text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{orders.length}</span>
-              )}
-            </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" as const }}>
+          <p style={{ fontSize: 11, color: "rgba(255,249,240,0.35)", marginRight: 4 }}>
+            Updated {lastRefreshed.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+          </p>
+
+          <button onClick={seedDemo} disabled={seeding}
+            style={{
+              padding: "7px 14px", borderRadius: 10, border: "none",
+              cursor: seeding ? "not-allowed" : "pointer",
+              background: "rgba(124,58,237,0.25)", color: "#c4b5fd",
+              display: "flex", alignItems: "center", gap: 6,
+              fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+              opacity: seeding ? 0.7 : 1,
+            }}>
+            <FlaskConical size={13} />
+            {seeding ? "Seeding…" : "Load Demo"}
+          </button>
+
+          <button onClick={() => setLastRefreshed(new Date())}
+            style={{
+              padding: "7px 14px", borderRadius: 10, border: "none", cursor: "pointer",
+              background: "rgba(255,249,240,0.1)", color: "#FFF9F0",
+              display: "flex", alignItems: "center", gap: 6,
+              fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+            }}>
+            <RefreshCw size={13} />
+            Refresh
+          </button>
+
+          <button onClick={logout}
+            style={{
+              padding: "7px 14px", borderRadius: 10, border: "none", cursor: "pointer",
+              background: "rgba(220,38,38,0.15)", color: "#fca5a5",
+              display: "flex", alignItems: "center", gap: 6,
+              fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+            }}>
+            <LogOut size={13} /> Sign Out
+          </button>
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 20px" }}>
+
+        {/* Stats grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 28 }}>
+          {[
+            { label: "Total Orders", value: stats.total,     color: "#1e40af", bg: "rgba(30,64,175,0.08)",   icon: ShoppingBag  },
+            { label: "Pending",      value: stats.pending,   color: "#d97706", bg: "rgba(217,119,6,0.08)",   icon: Clock        },
+            { label: "Confirmed",    value: stats.confirmed, color: "#2563eb", bg: "rgba(37,99,235,0.08)",   icon: CheckCircle2 },
+            { label: "Shipped",      value: stats.shipped,   color: "#7c3aed", bg: "rgba(124,58,237,0.08)",  icon: Truck        },
+            { label: "Delivered",    value: stats.delivered, color: "#16a34a", bg: "rgba(22,163,74,0.08)",   icon: Package      },
+            { label: "Revenue",      value: stats.revenue > 0 ? `₹${stats.revenue.toLocaleString("en-IN")}` : "₹0",
+              color: "hsl(4,60%,44%)", bg: "rgba(181,58,46,0.08)", icon: TrendingUp },
+          ].map((s, i) => (
+            <motion.div key={s.label}
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06 }}
+              style={{
+                borderRadius: 16, padding: "16px 18px",
+                background: "hsl(30,100%,98%)",
+                border: "1px solid rgba(139,94,60,0.1)",
+                boxShadow: "0 2px 8px rgba(139,94,60,0.06)",
+              }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(25,38%,50%)" }}>
+                  {s.label}
+                </p>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <s.icon size={15} color={s.color} />
+                </div>
+              </div>
+              <p style={{ fontSize: 26, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</p>
+            </motion.div>
           ))}
         </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Filters */}
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" as const, marginBottom: 20 }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
+            <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "hsl(25,38%,50%)" }} />
+            <input
+              placeholder="Search orders, customers, payment IDs…"
+              value={search} onChange={(e) => setSearch(e.target.value)}
+              style={{
+                width: "100%", paddingLeft: 36, paddingRight: 14, paddingTop: 10, paddingBottom: 10,
+                borderRadius: 12, border: "1.5px solid rgba(139,94,60,0.15)",
+                fontSize: 13, outline: "none", boxSizing: "border-box" as const, fontFamily: "inherit",
+                background: "hsl(30,100%,98%)", color: "hsl(18,18%,14%)",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const }}>
+            {(["all", ...ALL_STATUSES] as const).map((s) => (
+              <button key={s} onClick={() => setFilterStatus(s as OrderStatus | "all")}
+                style={{
+                  padding: "7px 14px", borderRadius: 10, cursor: "pointer",
+                  fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+                  border: filterStatus === s ? "none" : "1px solid rgba(139,94,60,0.15)",
+                  background: filterStatus === s ? "hsl(4,60%,44%)" : "hsl(30,100%,98%)",
+                  color: filterStatus === s ? "#FFF9F0" : "hsl(25,38%,45%)",
+                }}>
+                {s === "all" ? "All" : STATUS_CONFIG[s as OrderStatus].label}
+                {s !== "all" && ` (${orders.filter((o) => o.status === s).length})`}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        {/* ── OVERVIEW ── */}
-        {tab === "overview" && (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 font-display">Good day! 👋</h1>
-              <p className="text-gray-500 text-sm mt-0.5">Here's what's happening at Kasthuribai Ready Mades.</p>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard icon={Package} label="Total Orders" value={String(stats.total)} sub="All time" color="bg-primary" />
-              <StatCard icon={TrendingUp} label="Total Revenue" value={stats.revenue > 0 ? formatPrice(stats.revenue) : "₹0"} sub="Paid orders" color="bg-emerald-500" />
-              <StatCard icon={Users} label="Customers" value={String(stats.customers)} sub="Unique buyers" color="bg-violet-500" />
-              <StatCard icon={Clock} label="Pending" value={String(stats.pending)} sub="Need attention" color="bg-amber-500" />
-            </div>
-
-            {/* Quick status breakdown */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <p className="font-bold text-gray-800 mb-4">Order Status Breakdown</p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map((s) => {
-                  const count = orders.filter(o => o.status === s).length;
-                  const cfg = STATUS_CONFIG[s];
-                  const Icon = cfg.icon;
-                  return (
-                    <button key={s} onClick={() => { setTab("orders"); setStatusFilter(s); }}
-                      className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border ${cfg.bg} hover:scale-105 transition-transform cursor-pointer`}>
-                      <Icon className={`w-5 h-5 ${cfg.color}`} />
-                      <span className="text-xl font-bold text-gray-900">{count}</span>
-                      <span className={`text-[10px] font-semibold ${cfg.color}`}>{cfg.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Recent orders */}
-            {orders.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                  <p className="font-bold text-gray-800">Recent Orders</p>
-                  <button onClick={() => setTab("orders")} className="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
-                    View All <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <div className="divide-y divide-gray-50">
-                  {orders.slice(0, 5).map((order) => (
-                    <div key={order.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors">
-                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-primary">{order.customerName.charAt(0).toUpperCase()}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-800 truncate">{order.customerName}</p>
-                        <p className="text-[10px] text-gray-400">{formatDate(order.createdAt)}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-bold text-gray-900">{formatPrice(order.totalAmount)}</p>
-                        <StatusBadge status={order.status} />
-                      </div>
-                      <button onClick={() => setSelectedOrderId(order.id)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center hover:bg-primary/10 transition-colors flex-shrink-0">
-                        <Eye className="w-3.5 h-3.5 text-gray-500" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
+        {/* Order list */}
+        {filtered.length === 0 ? (
+          <div style={{
+            textAlign: "center", padding: "80px 0",
+            background: "hsl(30,100%,98%)", borderRadius: 20,
+            border: "1px solid rgba(139,94,60,0.1)",
+          }}>
+            <ShoppingBag size={40} style={{ margin: "0 auto 12px", display: "block", opacity: 0.2 }} />
+            <p style={{ fontWeight: 700, fontSize: 16, color: "hsl(18,18%,20%)", marginBottom: 6 }}>
+              {orders.length === 0 ? "No orders yet" : "No orders match your filter"}
+            </p>
+            <p style={{ fontSize: 13, color: "hsl(25,38%,50%)", marginBottom: orders.length === 0 ? 20 : 0 }}>
+              {orders.length === 0
+                ? "Orders will appear here once customers check out."
+                : "Try adjusting your search or filter."}
+            </p>
             {orders.length === 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-                <Package className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                <p className="text-gray-500 font-semibold">No orders yet</p>
-                <p className="text-gray-400 text-sm mt-1">Orders placed by customers will appear here automatically.</p>
-              </div>
+              <button onClick={seedDemo} disabled={seeding}
+                style={{
+                  margin: "0 auto", display: "flex", alignItems: "center", gap: 8,
+                  padding: "11px 22px", borderRadius: 14, border: "none",
+                  background: "linear-gradient(135deg, hsl(258,60%,54%), hsl(258,60%,44%))",
+                  color: "#fff", fontWeight: 700, fontSize: 14,
+                  cursor: seeding ? "not-allowed" : "pointer",
+                  fontFamily: "inherit", boxShadow: "0 6px 20px rgba(124,58,237,0.3)",
+                  opacity: seeding ? 0.7 : 1,
+                }}>
+                <FlaskConical size={16} />
+                {seeding ? "Loading demo orders…" : "Load Demo Orders"}
+              </button>
             )}
           </div>
-        )}
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <p style={{ fontSize: 12, color: "hsl(25,38%,50%)", marginBottom: 4 }}>
+              Showing {filtered.length} of {orders.length} order{orders.length !== 1 ? "s" : ""}
+            </p>
 
-        {/* ── ORDERS ── */}
-        {tab === "orders" && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by name, email, phone or order ID…"
-                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
-              </div>
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as OrderStatus | "all")}
-                  className="pl-9 pr-8 py-2.5 text-sm border border-gray-200 rounded-xl bg-white outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer">
-                  <option value="all">All Statuses</option>
-                  {(Object.keys(STATUS_CONFIG) as OrderStatus[]).map(s => (
-                    <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
+            {filtered.map((order, i) => {
+              const sc = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
+              const StatusIcon = sc.icon;
+              const isExpanded = expandedId === order.id;
 
-            {filteredOrders.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-                <AlertCircle className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                <p className="text-gray-500 font-semibold">No orders found</p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Order</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Customer</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider hidden md:table-cell">Date</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {filteredOrders.map((order) => (
-                        <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3.5">
-                            <p className="font-bold text-gray-800 font-mono text-xs">#{order.id.slice(-8).toUpperCase()}</p>
-                            <p className="text-[10px] text-gray-400">{order.items.length} item{order.items.length !== 1 ? "s" : ""}</p>
-                          </td>
-                          <td className="px-4 py-3.5 hidden sm:table-cell">
-                            <p className="font-semibold text-gray-800">{order.customerName}</p>
-                            <p className="text-[10px] text-gray-400 truncate max-w-[160px]">{order.customerEmail}</p>
-                          </td>
-                          <td className="px-4 py-3.5 hidden md:table-cell">
-                            <p className="text-xs text-gray-600">{formatDate(order.createdAt)}</p>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <p className="font-bold text-gray-900">{formatPrice(order.totalAmount)}</p>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <StatusBadge status={order.status} />
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <div className="flex items-center gap-1.5">
-                              <button onClick={() => setSelectedOrderId(order.id)}
-                                className="px-2.5 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-semibold hover:bg-primary hover:text-white transition-all flex items-center gap-1">
-                                <Eye className="w-3 h-3" /> View
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── CUSTOMERS ── */}
-        {tab === "customers" && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <p className="font-bold text-gray-800">All Customers ({customers.length})</p>
-              </div>
-              {customers.length === 0 ? (
-                <div className="p-12 text-center">
-                  <Users className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                  <p className="text-gray-500 font-semibold">No customers yet</p>
-                  <p className="text-gray-400 text-sm mt-1">Customer details will appear here once orders are placed.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-gray-50 border-b border-gray-100">
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Phone</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Orders</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Total Spent</th>
-                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider hidden md:table-cell">Last Order</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {customers.map((c) => (
-                        <tr key={c.email} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3.5">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                <span className="text-xs font-bold text-primary">{c.name.charAt(0).toUpperCase()}</span>
-                              </div>
-                              <div>
-                                <p className="font-semibold text-gray-800">{c.name}</p>
-                                <p className="text-[10px] text-gray-400 truncate max-w-[140px]">{c.email}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5 hidden sm:table-cell">
-                            <p className="text-sm text-gray-700">{c.phone}</p>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded-full">{c.orders}</span>
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <p className="font-bold text-gray-900">{formatPrice(c.total)}</p>
-                          </td>
-                          <td className="px-4 py-3.5 hidden md:table-cell">
-                            <p className="text-xs text-gray-500">{formatDate(c.lastOrder)}</p>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ── SHIPPING ── */}
-        {tab === "shipping" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
-              <StatCard icon={Package}    label="To Ship"       value={String(orders.filter(o => o.status === "processing").length)}        sub="Ready to ship"      color="bg-indigo-500" />
-              <StatCard icon={Truck}      label="In Transit"    value={String(orders.filter(o => ["shipped","out_for_delivery"].includes(o.status)).length)} sub="On the way" color="bg-orange-500" />
-              <StatCard icon={CheckCircle2} label="Delivered"  value={String(orders.filter(o => o.status === "delivered").length)}           sub="Completed"          color="bg-green-500" />
-            </div>
-
-            {["processing", "shipped", "out_for_delivery"].map((filterStatus) => {
-              const filtered = orders.filter(o => o.status === filterStatus);
-              if (filtered.length === 0) return null;
-              const cfg = STATUS_CONFIG[filterStatus as OrderStatus];
-              const Icon = cfg.icon;
               return (
-                <div key={filterStatus} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <div className={`flex items-center gap-2 px-5 py-4 border-b border-gray-100 ${cfg.bg}`}>
-                    <Icon className={`w-4 h-4 ${cfg.color}`} />
-                    <p className={`font-bold text-sm ${cfg.color}`}>{cfg.label} ({filtered.length})</p>
+                <motion.div key={order.id}
+                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  style={{
+                    borderRadius: 18, overflow: "hidden",
+                    background: "hsl(30,100%,98%)",
+                    border: `1px solid ${isExpanded ? "rgba(181,58,46,0.25)" : "rgba(139,94,60,0.1)"}`,
+                    boxShadow: isExpanded ? "0 4px 20px rgba(181,58,46,0.1)" : "0 2px 8px rgba(139,94,60,0.05)",
+                    transition: "box-shadow 0.2s, border-color 0.2s",
+                  }}>
+
+                  {/* ── Row header (click to expand) ── */}
+                  <div
+                    onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                    style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", cursor: "pointer", flexWrap: "wrap" as const }}>
+
+                    {/* Order ID + date */}
+                    <div style={{ minWidth: 140 }}>
+                      <p style={{ fontSize: 13, fontWeight: 800, color: "hsl(4,60%,44%)", marginBottom: 2 }}>
+                        #{order.id.slice(-10).toUpperCase()}
+                      </p>
+                      <p style={{ fontSize: 11, color: "hsl(25,38%,50%)" }}>
+                        <Calendar size={10} style={{ display: "inline", marginRight: 3 }} />
+                        {fmt(order.createdAt)}
+                      </p>
+                    </div>
+
+                    {/* Customer */}
+                    <div style={{ flex: 1, minWidth: 140 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "hsl(18,18%,14%)", marginBottom: 2 }}>
+                        {order.customerName}
+                      </p>
+                      <p style={{ fontSize: 11, color: "hsl(25,38%,50%)" }}>
+                        {order.customerPhone}
+                        {order.customerEmail && ` · ${order.customerEmail}`}
+                      </p>
+                    </div>
+
+                    {/* Items summary */}
+                    <div style={{ minWidth: 100 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "hsl(18,18%,20%)", marginBottom: 2 }}>
+                        {order.items.length} item{order.items.length !== 1 ? "s" : ""}
+                      </p>
+                      <p style={{ fontSize: 11, color: "hsl(25,38%,50%)", whiteSpace: "nowrap" }}>
+                        {order.items.map((it) => it.name.split(" ")[0]).slice(0, 2).join(", ")}
+                        {order.items.length > 2 && "…"}
+                      </p>
+                    </div>
+
+                    {/* Total */}
+                    <p style={{ fontSize: 16, fontWeight: 800, color: "hsl(4,60%,44%)", minWidth: 80, textAlign: "right" as const }}>
+                      ₹{order.totalAmount.toLocaleString("en-IN")}
+                    </p>
+
+                    {/* Status badge */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 12px", borderRadius: 999, background: sc.bg }}>
+                      <StatusIcon size={12} color={sc.color} />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: sc.color }}>{sc.label}</span>
+                    </div>
+
+                    {/* Chevron */}
+                    <ChevronDown size={16} color="hsl(25,38%,55%)"
+                      style={{ transform: isExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }} />
                   </div>
-                  <div className="divide-y divide-gray-50">
-                    {filtered.map((order) => (
-                      <div key={order.id} className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-gray-800 font-mono text-xs">#{order.id.slice(-8).toUpperCase()}</span>
-                            <StatusBadge status={order.status} />
+
+                  {/* ── Expanded detail ── */}
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div key="detail"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.22 }}
+                        style={{ overflow: "hidden" }}
+                      >
+                        <div style={{
+                          borderTop: "1px solid rgba(139,94,60,0.1)", padding: "18px 20px",
+                          display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20,
+                        }}>
+                          {/* Customer info */}
+                          <div>
+                            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(25,38%,50%)", marginBottom: 12 }}>
+                              Customer Details
+                            </p>
+                            {[
+                              { icon: User,       text: order.customerName },
+                              { icon: Phone,      text: order.customerPhone },
+                              ...(order.customerEmail ? [{ icon: Mail, text: order.customerEmail }] : []),
+                              { icon: MapPin,     text: order.shippingAddress },
+                              ...(order.razorpayPaymentId ? [{ icon: CreditCard, text: order.razorpayPaymentId, mono: true }] : []),
+                            ].map((row, idx) => (
+                              <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+                                <row.icon size={13} color="hsl(25,38%,55%)" style={{ flexShrink: 0, marginTop: 2 }} />
+                                <p style={{ fontSize: 13, color: "hsl(18,18%,20%)", fontFamily: row.mono ? "monospace" : "inherit", wordBreak: "break-all" as const }}>
+                                  {row.text}
+                                </p>
+                              </div>
+                            ))}
                           </div>
-                          <p className="text-sm font-semibold text-gray-700 mt-1">{order.customerName}</p>
-                          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{order.shippingAddress}</p>
-                        </div>
-                        <div className="text-right flex-shrink-0">
-                          <p className="font-bold text-gray-900">{formatPrice(order.totalAmount)}</p>
-                          <div className="flex gap-1 mt-1.5 justify-end">
-                            {filterStatus !== "out_for_delivery" && (
-                              <button onClick={() => updateOrderStatus(order.id, filterStatus === "processing" ? "shipped" : "out_for_delivery")}
-                                className="px-2.5 py-1 bg-primary text-white rounded-lg text-[10px] font-bold hover:bg-primary/90 transition-colors">
-                                {filterStatus === "processing" ? "Mark Shipped" : "Out for Delivery"}
-                              </button>
-                            )}
-                            {filterStatus === "out_for_delivery" && (
-                              <button onClick={() => updateOrderStatus(order.id, "delivered")}
-                                className="px-2.5 py-1 bg-green-500 text-white rounded-lg text-[10px] font-bold hover:bg-green-600 transition-colors">
-                                Mark Delivered
-                              </button>
-                            )}
-                            <button onClick={() => setSelectedOrderId(order.id)}
-                              className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-[10px] font-bold hover:bg-gray-200 transition-colors">
-                              Details
-                            </button>
+
+                          {/* Order items */}
+                          <div>
+                            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(25,38%,50%)", marginBottom: 12 }}>
+                              Order Items
+                            </p>
+                            {order.items.map((item, idx) => (
+                              <div key={idx} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, gap: 12 }}>
+                                <div>
+                                  <p style={{ fontSize: 13, fontWeight: 600, color: "hsl(18,18%,14%)" }}>{item.name}</p>
+                                  <p style={{ fontSize: 11, color: "hsl(25,38%,55%)" }}>
+                                    {item.category} · Qty {item.quantity}
+                                    {item.quantity > 1 && ` · ${formatPrice(item.price)} each`}
+                                  </p>
+                                </div>
+                                <p style={{ fontSize: 13, fontWeight: 700, color: "hsl(4,60%,44%)", whiteSpace: "nowrap" as const }}>
+                                  ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                                </p>
+                              </div>
+                            ))}
+                            <div style={{ borderTop: "1px solid rgba(139,94,60,0.12)", paddingTop: 8, marginTop: 4, display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ fontSize: 13, fontWeight: 700 }}>Total</span>
+                              <span style={{ fontSize: 15, fontWeight: 800, color: "hsl(4,60%,44%)" }}>
+                                ₹{order.totalAmount.toLocaleString("en-IN")}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Update status */}
+                          <div>
+                            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(25,38%,50%)", marginBottom: 12 }}>
+                              Update Status
+                            </p>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                              {ALL_STATUSES.map((s) => {
+                                const cfg = STATUS_CONFIG[s];
+                                const Icon = cfg.icon;
+                                const isCurrent = order.status === s;
+                                return (
+                                  <button key={s}
+                                    disabled={isCurrent || updatingId === order.id}
+                                    onClick={() => handleUpdateStatus(order.id, s)}
+                                    style={{
+                                      display: "flex", alignItems: "center", gap: 8,
+                                      padding: "9px 14px", borderRadius: 12, border: "none",
+                                      cursor: isCurrent ? "default" : "pointer",
+                                      background: isCurrent ? cfg.bg : "rgba(139,94,60,0.04)",
+                                      fontFamily: "inherit", transition: "background 0.15s",
+                                      opacity: updatingId === order.id && !isCurrent ? 0.5 : 1,
+                                    }}>
+                                    <Icon size={13} color={isCurrent ? cfg.color : "hsl(25,38%,55%)"} />
+                                    <span style={{ fontSize: 12, fontWeight: isCurrent ? 700 : 500, color: isCurrent ? cfg.color : "hsl(25,38%,45%)" }}>
+                                      {cfg.label}
+                                    </span>
+                                    {isCurrent && (
+                                      <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, color: cfg.color }}>● CURRENT</span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
               );
             })}
-
-            {orders.filter(o => ["processing","shipped","out_for_delivery"].includes(o.status)).length === 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-                <Truck className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                <p className="text-gray-500 font-semibold">No active shipments</p>
-                <p className="text-gray-400 text-sm mt-1">Confirmed orders will appear here for shipping management.</p>
-              </div>
-            )}
           </div>
         )}
-      </main>
-
-      {/* Order detail modal */}
-      {selectedOrderId && (
-        <OrderDetail orderId={selectedOrderId} onClose={() => setSelectedOrderId(null)} />
-      )}
+      </div>
     </div>
   );
 }
