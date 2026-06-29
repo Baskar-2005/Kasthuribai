@@ -3,7 +3,7 @@ import { X, Minus, Plus, ShoppingBag, MessageCircle, CreditCard, Smartphone, Che
 import { AnimatePresence, motion } from "framer-motion";
 import { useCart } from "@/store/use-cart";
 import { formatPrice } from "@/lib/utils";
-import { useOrders, defaultTrackingSteps } from "@/store/use-orders";
+import { useOrders, buildTrackingSteps } from "@/store/use-orders";
 import { createRazorpayOrder, initializePayment, verifyPayment, CustomerDetails } from "@/lib/razorpay";
 import { useLocation } from "wouter";
 
@@ -165,11 +165,7 @@ function RazorpayPanel({ total, items, onClose }: { total: number; items: any[];
               customerEmail: form.email,
               customerPhone: form.phone,
               shippingAddress: form.address,
-              trackingSteps: defaultTrackingSteps.map((step) => ({
-                ...step,
-                timestamp: step.status === "confirmed" ? new Date().toISOString() : null,
-                completed: step.status === "confirmed",
-              })),
+              trackingSteps: buildTrackingSteps("confirmed", new Date().toISOString()),
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             };

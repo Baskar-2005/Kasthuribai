@@ -1,35 +1,31 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Package, Truck, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp,
+  Package, Truck, CheckCircle, XCircle, Clock, ChevronDown,
   Search, ArrowLeft, Download, RotateCcw, AlertCircle, ShoppingBag,
-  MapPin, Phone, RefreshCcw, Star, FileText, Filter, SortAsc,
-  MessageSquare, ArrowRight, Banknote, Calendar,
+  MapPin, Phone, RefreshCcw, FileText, SortAsc, MessageSquare,
+  ArrowRight, Banknote, Calendar, Banknote as Refund,
 } from "lucide-react";
 import { Link } from "wouter";
-import { MOCK_ORDERS, MockOrder, ExtendedOrderStatus } from "@/components/my-orders/mock-orders";
+import { useOrders, OrderStatus, Order } from "@/store/use-orders";
+import { useIssues } from "@/store/use-issues";
 import { Navbar } from "@/components/sections/Navbar";
 
 // ─── Status config ────────────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<ExtendedOrderStatus, {
-  label: string;
-  color: string;
-  bg: string;
-  icon: React.ElementType;
-  dot: string;
-}> = {
-  pending:          { label: "Pending",          color: "text-yellow-700", bg: "bg-yellow-50 border-yellow-200",   icon: Clock,        dot: "bg-yellow-400" },
-  confirmed:        { label: "Confirmed",         color: "text-blue-700",   bg: "bg-blue-50 border-blue-200",     icon: CheckCircle,  dot: "bg-blue-400" },
-  processing:       { label: "Processing",        color: "text-purple-700", bg: "bg-purple-50 border-purple-200", icon: Package,      dot: "bg-purple-400" },
-  shipped:          { label: "Shipped",           color: "text-indigo-700", bg: "bg-indigo-50 border-indigo-200", icon: Truck,        dot: "bg-indigo-400" },
-  out_for_delivery: { label: "Out for Delivery",  color: "text-orange-700", bg: "bg-orange-50 border-orange-200", icon: Truck,        dot: "bg-orange-400" },
-  delivered:        { label: "Delivered",         color: "text-green-700",  bg: "bg-green-50 border-green-200",   icon: CheckCircle,  dot: "bg-green-500" },
-  cancelled:        { label: "Cancelled",         color: "text-red-700",    bg: "bg-red-50 border-red-200",       icon: XCircle,      dot: "bg-red-400" },
-  returned:         { label: "Returned",          color: "text-rose-700",   bg: "bg-rose-50 border-rose-200",     icon: RotateCcw,    dot: "bg-rose-400" },
-  refunded:         { label: "Refunded",          color: "text-teal-700",   bg: "bg-teal-50 border-teal-200",     icon: Banknote,     dot: "bg-teal-400" },
+const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string; border: string; icon: React.ElementType; dot: string }> = {
+  pending:          { label: "Pending",         color: "text-yellow-700", bg: "bg-yellow-50",  border: "border-yellow-200", icon: Clock,       dot: "bg-yellow-400" },
+  confirmed:        { label: "Confirmed",        color: "text-blue-700",   bg: "bg-blue-50",    border: "border-blue-200",   icon: CheckCircle, dot: "bg-blue-400" },
+  processing:       { label: "Processing",       color: "text-purple-700", bg: "bg-purple-50",  border: "border-purple-200", icon: Package,     dot: "bg-purple-400" },
+  shipped:          { label: "Shipped",          color: "text-indigo-700", bg: "bg-indigo-50",  border: "border-indigo-200", icon: Truck,       dot: "bg-indigo-400" },
+  out_for_delivery: { label: "Out for Delivery", color: "text-orange-700", bg: "bg-orange-50",  border: "border-orange-200", icon: Truck,       dot: "bg-orange-400" },
+  delivered:        { label: "Delivered",        color: "text-green-700",  bg: "bg-green-50",   border: "border-green-200",  icon: CheckCircle, dot: "bg-green-500" },
+  cancelled:        { label: "Cancelled",        color: "text-red-700",    bg: "bg-red-50",     border: "border-red-200",    icon: XCircle,     dot: "bg-red-400" },
+  returned:         { label: "Returned",         color: "text-rose-700",   bg: "bg-rose-50",    border: "border-rose-200",   icon: RotateCcw,   dot: "bg-rose-400" },
+  refunded:         { label: "Refunded",         color: "text-teal-700",   bg: "bg-teal-50",    border: "border-teal-200",   icon: Banknote,    dot: "bg-teal-400" },
 };
 
-const TABS: { key: ExtendedOrderStatus | "all"; label: string }[] = [
+type TabKey = OrderStatus | "all";
+const TABS: { key: TabKey; label: string }[] = [
   { key: "all",              label: "All" },
   { key: "out_for_delivery", label: "Out for Delivery" },
   { key: "shipped",          label: "Shipped" },
@@ -39,40 +35,30 @@ const TABS: { key: ExtendedOrderStatus | "all"; label: string }[] = [
   { key: "returned",         label: "Returned" },
 ];
 
-const TIMELINE_KEYS: ExtendedOrderStatus[] = [
-  "pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered",
-];
+const DELIVERY_ORDER: OrderStatus[] = ["pending","confirmed","processing","shipped","out_for_delivery","delivered"];
 
-function formatCurrency(n: number) {
+function fmtCur(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 }
-
-function formatDate(iso: string) {
+function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
-function formatDateTime(iso: string) {
+function fmtDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
+// ─── Modal wrapper ────────────────────────────────────────────────────────────
 function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode }) {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
+        <motion.div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <motion.div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
           <motion.div
             className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto"
-            initial={{ y: 60, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 60, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          >
+            initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}>
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-display font-bold text-lg text-gray-900">{title}</h3>
               <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
@@ -88,17 +74,11 @@ function Modal({ open, onClose, title, children }: { open: boolean; onClose: () 
 }
 
 // ─── Stat card ────────────────────────────────────────────────────────────────
-function StatCard({ label, value, icon: Icon, color, delay }: {
-  label: string; value: number | string; icon: React.ElementType; color: string; delay: number;
-}) {
+function StatCard({ label, value, icon: Icon, bg, delay }: { label: string; value: number | string; icon: React.ElementType; bg: string; delay: number }) {
   return (
-    <motion.div
-      className={`bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3`}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4, ease: "easeOut" }}
-    >
-      <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center flex-shrink-0`}>
+    <motion.div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3"
+      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.4 }}>
+      <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
         <Icon className="w-5 h-5 text-white" />
       </div>
       <div>
@@ -110,53 +90,29 @@ function StatCard({ label, value, icon: Icon, color, delay }: {
 }
 
 // ─── Timeline ─────────────────────────────────────────────────────────────────
-function OrderTimeline({ order }: { order: MockOrder }) {
-  const steps = order.timeline.filter(s => TIMELINE_KEYS.includes(s.key));
-
+function OrderTimeline({ order }: { order: Order }) {
+  const steps = order.trackingSteps.filter(s => DELIVERY_ORDER.includes(s.status as OrderStatus));
   return (
     <div className="relative ml-2">
       {steps.map((step, i) => {
         const isLast = i === steps.length - 1;
+        const isActive = step.completed && (isLast || !steps[i + 1]?.completed);
         return (
-          <div key={step.key} className="flex items-start gap-3 relative">
-            {/* Line */}
-            {!isLast && (
-              <div className="absolute left-[11px] top-6 w-0.5 h-8 bg-gray-100" />
-            )}
-            {/* Dot */}
+          <div key={`${step.status}-${i}`} className="flex items-start gap-3 relative">
+            {!isLast && <div className="absolute left-[11px] top-6 w-0.5 h-8 bg-gray-100" />}
             <motion.div
-              className={`relative z-10 flex-shrink-0 mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                step.completed
-                  ? "bg-primary border-primary shadow-md shadow-primary/20"
-                  : "bg-white border-gray-200"
-              }`}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: i * 0.08, type: "spring", stiffness: 300 }}
-            >
-              {step.completed ? (
-                <CheckCircle className="w-3 h-3 text-white" />
-              ) : (
-                <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-              )}
-              {step.active && step.completed && (
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-primary/20"
-                  animate={{ scale: [1, 1.6, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                />
+              className={`relative z-10 flex-shrink-0 mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center ${step.completed ? "bg-primary border-primary shadow-md shadow-primary/20" : "bg-white border-gray-200"}`}
+              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: i * 0.08, type: "spring", stiffness: 300 }}>
+              {step.completed ? <CheckCircle className="w-3 h-3 text-white" /> : <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />}
+              {isActive && (
+                <motion.div className="absolute inset-0 rounded-full bg-primary/20"
+                  animate={{ scale: [1, 1.7, 1] }} transition={{ repeat: Infinity, duration: 2 }} />
               )}
             </motion.div>
-
-            {/* Content */}
             <div className={`pb-6 ${isLast ? "pb-0" : ""}`}>
-              <p className={`text-sm font-semibold ${step.completed ? "text-gray-900" : "text-gray-400"}`}>
-                {step.label}
-              </p>
+              <p className={`text-sm font-semibold ${step.completed ? "text-gray-900" : "text-gray-400"}`}>{step.label}</p>
               <p className="text-xs text-gray-400">{step.description}</p>
-              {step.timestamp && (
-                <p className="text-[10px] text-primary mt-0.5 font-medium">{formatDateTime(step.timestamp)}</p>
-              )}
+              {step.timestamp && <p className="text-[10px] text-primary mt-0.5 font-medium">{fmtDateTime(step.timestamp)}</p>}
             </div>
           </div>
         );
@@ -166,57 +122,62 @@ function OrderTimeline({ order }: { order: MockOrder }) {
 }
 
 // ─── Issue Modal ──────────────────────────────────────────────────────────────
-function IssueModal({ open, onClose, order }: { open: boolean; onClose: () => void; order: MockOrder }) {
+function IssueModal({ open, onClose, order }: { open: boolean; onClose: () => void; order: Order }) {
+  const { raiseIssue } = useIssues();
   const [issueType, setIssueType] = useState("");
   const [description, setDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const ISSUES = ["Wrong Product", "Damaged Item", "Late Delivery", "Payment Issue", "Missing Product", "Other"];
 
-  const issues = ["Wrong Product", "Damaged Item", "Late Delivery", "Payment Issue", "Missing Product", "Other"];
+  function handleSubmit() {
+    if (!issueType) return;
+    raiseIssue({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      customerPhone: order.customerPhone,
+      issueType,
+      description: description || issueType,
+    });
+    setSubmitted(true);
+  }
 
   return (
-    <Modal open={open} onClose={onClose} title="Raise an Issue">
+    <Modal open={open} onClose={() => { onClose(); setSubmitted(false); setIssueType(""); setDescription(""); }} title="Raise an Issue">
       {submitted ? (
         <div className="text-center py-6">
           <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-7 h-7 text-green-600" />
           </div>
           <h4 className="font-semibold text-gray-900 mb-1">Issue Raised!</h4>
-          <p className="text-sm text-gray-500">Our team will contact you within 24 hours.</p>
-          <button onClick={onClose} className="mt-4 px-6 py-2 bg-primary text-white rounded-full text-sm font-semibold">Done</button>
+          <p className="text-sm text-gray-500 mb-1">Our team will contact you within 24 hours.</p>
+          <p className="text-xs text-gray-400">Order #{order.orderNumber}</p>
+          <button onClick={() => { onClose(); setSubmitted(false); setIssueType(""); setDescription(""); }}
+            className="mt-4 px-6 py-2 bg-primary text-white rounded-full text-sm font-semibold">Done</button>
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-gray-500">Order #{order.orderNumber}</p>
+          <p className="text-sm text-gray-500">Order #{order.orderNumber} · {fmtCur(order.totalAmount)}</p>
           <div>
             <label className="text-xs font-semibold text-gray-700 mb-2 block">What's the issue?</label>
             <div className="grid grid-cols-2 gap-2">
-              {issues.map(i => (
-                <button
-                  key={i}
-                  onClick={() => setIssueType(i)}
-                  className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
-                    issueType === i ? "bg-primary text-white border-primary" : "bg-gray-50 text-gray-700 border-gray-200 hover:border-primary/40"
-                  }`}
-                >
+              {ISSUES.map(i => (
+                <button key={i} onClick={() => setIssueType(i)}
+                  className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all ${issueType === i ? "bg-primary text-white border-primary" : "bg-gray-50 text-gray-700 border-gray-200 hover:border-primary/40"}`}>
                   {i}
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-700 mb-1 block">Description</label>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={e => setDescription(e.target.value)}
+            <label className="text-xs font-semibold text-gray-700 mb-1 block">Description (optional)</label>
+            <textarea rows={3} value={description} onChange={e => setDescription(e.target.value)}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
-              placeholder="Describe the issue..."
-            />
+              placeholder="Describe the issue in detail..." />
           </div>
-          <button
-            onClick={() => issueType && setSubmitted(true)}
-            className={`w-full py-2.5 rounded-full font-semibold text-sm transition-all ${issueType ? "bg-primary text-white hover:bg-primary/90" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
-          >
+          <button onClick={handleSubmit}
+            className={`w-full py-2.5 rounded-full font-semibold text-sm transition-all ${issueType ? "bg-primary text-white hover:bg-primary/90" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}>
             Submit Issue
           </button>
         </div>
@@ -226,63 +187,43 @@ function IssueModal({ open, onClose, order }: { open: boolean; onClose: () => vo
 }
 
 // ─── Return Modal ─────────────────────────────────────────────────────────────
-function ReturnModal({ open, onClose, order }: { open: boolean; onClose: () => void; order: MockOrder }) {
+function ReturnModal({ open, onClose, order }: { open: boolean; onClose: () => void; order: Order }) {
   const [reason, setReason] = useState("");
-  const [step, setStep] = useState<"form" | "confirm" | "done">("form");
-  const reasons = ["Wrong Size", "Wrong Product", "Damaged", "Not as Described", "Changed Mind"];
-
+  const [step, setStep] = useState<"form" | "done">("form");
+  const REASONS = ["Wrong Size", "Wrong Product", "Damaged", "Not as Described", "Changed Mind"];
   return (
-    <Modal open={open} onClose={onClose} title="Request Return">
-      {step === "form" && (
+    <Modal open={open} onClose={() => { onClose(); setStep("form"); setReason(""); }} title="Request Return">
+      {step === "form" ? (
         <div className="space-y-4">
-          <p className="text-sm text-gray-500">Order #{order.orderNumber} · {formatCurrency(order.totalAmount)}</p>
-          <div>
-            <label className="text-xs font-semibold text-gray-700 mb-2 block">Reason for return</label>
-            <div className="space-y-2">
-              {reasons.map(r => (
-                <button
-                  key={r}
-                  onClick={() => setReason(r)}
-                  className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm border transition-all text-left ${reason === r ? "bg-primary/5 border-primary text-primary" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}
-                >
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${reason === r ? "border-primary" : "border-gray-300"}`}>
-                    {reason === r && <div className="w-2 h-2 rounded-full bg-primary" />}
-                  </div>
-                  {r}
-                </button>
-              ))}
-            </div>
+          <p className="text-sm text-gray-500">Order #{order.orderNumber} · {fmtCur(order.totalAmount)}</p>
+          <div className="space-y-2">
+            {REASONS.map(r => (
+              <button key={r} onClick={() => setReason(r)}
+                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm border transition-all text-left ${reason === r ? "bg-primary/5 border-primary text-primary" : "border-gray-200 text-gray-700 hover:border-gray-300"}`}>
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${reason === r ? "border-primary" : "border-gray-300"}`}>
+                  {reason === r && <div className="w-2 h-2 rounded-full bg-primary" />}
+                </div>
+                {r}
+              </button>
+            ))}
           </div>
-          <button
-            onClick={() => reason && setStep("confirm")}
-            className={`w-full py-2.5 rounded-full font-semibold text-sm ${reason ? "bg-primary text-white" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}
-          >
-            Continue
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
+            Refund of {fmtCur(order.totalAmount)} will be processed to {order.paymentMethod} within 5–7 days.
+          </div>
+          <button onClick={() => reason && setStep("done")}
+            className={`w-full py-2.5 rounded-full font-semibold text-sm ${reason ? "bg-primary text-white" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}>
+            Confirm Return
           </button>
         </div>
-      )}
-      {step === "confirm" && (
-        <div className="space-y-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-            <p className="text-sm font-semibold text-amber-800">Confirm Return Request</p>
-            <p className="text-xs text-amber-700 mt-1">Reason: {reason}</p>
-            <p className="text-xs text-amber-700">Refund: {formatCurrency(order.totalAmount)} to original payment method</p>
-          </div>
-          <p className="text-xs text-gray-500">A pickup will be scheduled within 2 business days. Please keep the item in its original packaging.</p>
-          <div className="flex gap-2">
-            <button onClick={() => setStep("form")} className="flex-1 py-2.5 rounded-full border border-gray-200 text-sm font-medium text-gray-600">Back</button>
-            <button onClick={() => setStep("done")} className="flex-1 py-2.5 rounded-full bg-primary text-white text-sm font-semibold">Confirm Return</button>
-          </div>
-        </div>
-      )}
-      {step === "done" && (
+      ) : (
         <div className="text-center py-6">
           <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-7 h-7 text-green-600" />
           </div>
           <h4 className="font-semibold text-gray-900 mb-1">Return Requested!</h4>
-          <p className="text-sm text-gray-500">Pickup will be scheduled within 2 business days.</p>
-          <button onClick={onClose} className="mt-4 px-6 py-2 bg-primary text-white rounded-full text-sm font-semibold">Done</button>
+          <p className="text-sm text-gray-500">Pickup scheduled within 2 business days.</p>
+          <button onClick={() => { onClose(); setStep("form"); setReason(""); }}
+            className="mt-4 px-6 py-2 bg-primary text-white rounded-full text-sm font-semibold">Done</button>
         </div>
       )}
     </Modal>
@@ -290,12 +231,11 @@ function ReturnModal({ open, onClose, order }: { open: boolean; onClose: () => v
 }
 
 // ─── Invoice Modal ────────────────────────────────────────────────────────────
-function InvoiceModal({ open, onClose, order }: { open: boolean; onClose: () => void; order: MockOrder }) {
+function InvoiceModal({ open, onClose, order }: { open: boolean; onClose: () => void; order: Order }) {
   const tax = Math.round(order.totalAmount * 0.05);
   return (
     <Modal open={open} onClose={onClose} title="Invoice">
       <div className="space-y-4">
-        {/* Header */}
         <div className="flex justify-between items-start">
           <div>
             <p className="font-bold text-primary text-lg">KASTHURIBAI</p>
@@ -304,51 +244,31 @@ function InvoiceModal({ open, onClose, order }: { open: boolean; onClose: () => 
           </div>
           <div className="text-right">
             <p className="text-xs font-semibold text-gray-900">#{order.orderNumber}</p>
-            <p className="text-xs text-gray-500">{formatDate(order.createdAt)}</p>
+            <p className="text-xs text-gray-500">{fmtDate(order.createdAt)}</p>
           </div>
         </div>
-
         <div className="h-px bg-gray-100" />
-
-        {/* Items */}
         <div className="space-y-2">
           {order.items.map(item => (
             <div key={item.id} className="flex justify-between text-sm">
               <div>
                 <p className="font-medium text-gray-800 text-xs">{item.name}</p>
-                <p className="text-gray-400 text-[10px]">Qty: {item.quantity} · {item.size} · {item.color}</p>
+                <p className="text-gray-400 text-[10px]">Qty: {item.quantity}{item.size ? ` · ${item.size}` : ""}{item.color ? ` · ${item.color}` : ""}</p>
               </div>
-              <p className="font-semibold text-gray-900 text-xs">{formatCurrency(item.price * item.quantity)}</p>
+              <p className="font-semibold text-gray-900 text-xs">{fmtCur(item.price * item.quantity)}</p>
             </div>
           ))}
         </div>
-
         <div className="h-px bg-gray-100" />
-
-        {/* Totals */}
-        <div className="space-y-1.5 text-sm">
-          <div className="flex justify-between text-gray-500 text-xs">
-            <span>Subtotal</span><span>{formatCurrency(order.totalAmount + order.discount)}</span>
-          </div>
-          {order.discount > 0 && (
-            <div className="flex justify-between text-green-600 text-xs">
-              <span>Discount</span><span>-{formatCurrency(order.discount)}</span>
-            </div>
-          )}
-          <div className="flex justify-between text-gray-500 text-xs">
-            <span>GST (5%)</span><span>{formatCurrency(tax)}</span>
-          </div>
-          <div className="flex justify-between text-gray-500 text-xs">
-            <span>Shipping</span><span>{order.shippingCharge === 0 ? "FREE" : formatCurrency(order.shippingCharge)}</span>
-          </div>
-          <div className="flex justify-between font-bold text-gray-900 text-base border-t border-gray-100 pt-1.5">
-            <span>Total</span><span>{formatCurrency(order.totalAmount)}</span>
-          </div>
+        <div className="space-y-1.5 text-xs">
+          <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>{fmtCur(order.totalAmount + order.discount)}</span></div>
+          {order.discount > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-{fmtCur(order.discount)}</span></div>}
+          <div className="flex justify-between text-gray-500"><span>GST (5%)</span><span>{fmtCur(tax)}</span></div>
+          <div className="flex justify-between text-gray-500"><span>Shipping</span><span>{order.shippingCharge === 0 ? "FREE" : fmtCur(order.shippingCharge)}</span></div>
+          <div className="flex justify-between font-bold text-gray-900 text-base border-t border-gray-100 pt-1.5"><span>Total</span><span>{fmtCur(order.totalAmount)}</span></div>
         </div>
-
         <button className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-full text-sm font-semibold hover:bg-primary/90 transition-colors">
-          <Download className="w-4 h-4" />
-          Download PDF
+          <Download className="w-4 h-4" />Download PDF
         </button>
       </div>
     </Modal>
@@ -356,15 +276,14 @@ function InvoiceModal({ open, onClose, order }: { open: boolean; onClose: () => 
 }
 
 // ─── Order Card ───────────────────────────────────────────────────────────────
-function OrderCard({ order, index }: { order: MockOrder; index: number }) {
+function OrderCard({ order, index }: { order: Order; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const [issueOpen, setIssueOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
 
-  const cfg = STATUS_CONFIG[order.status];
+  const cfg = STATUS_CFG[order.status] ?? STATUS_CFG.pending;
   const Icon = cfg.icon;
-
   const canReturn = order.status === "delivered";
   const canCancel = ["pending", "confirmed", "processing"].includes(order.status);
 
@@ -372,72 +291,69 @@ function OrderCard({ order, index }: { order: MockOrder; index: number }) {
     <>
       <motion.div
         className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.06, duration: 0.35 }}
-      >
-        {/* Status bar */}
-        <div className={`h-1 w-full`} style={{ background: "linear-gradient(90deg, var(--color-primary), #c9a84c)" }} />
+        initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05, duration: 0.35 }}>
+
+        {/* Accent bar */}
+        <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,hsl(4,60%,44%),#c9a84c)" }} />
 
         <div className="p-4 sm:p-5">
-          {/* Top row */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Order</span>
-                <span className="text-sm font-bold text-gray-900">#{order.orderNumber}</span>
-              </div>
-              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${cfg.bg} ${cfg.color}`}>
+          {/* Header row */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Order</span>
+              <span className="text-sm font-bold text-gray-900">#{order.orderNumber}</span>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${cfg.bg} ${cfg.border} ${cfg.color}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                <Icon className="w-3 h-3" />
-                {cfg.label}
+                <Icon className="w-3 h-3" />{cfg.label}
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-gray-400">{formatDate(order.createdAt)}</span>
-              <span className="text-sm font-bold text-gray-900">{formatCurrency(order.totalAmount)}</span>
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-xs text-gray-400">{fmtDate(order.createdAt)}</span>
+              <span className="font-bold text-gray-900">{fmtCur(order.totalAmount)}</span>
             </div>
           </div>
 
-          {/* Items preview */}
+          {/* Items */}
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1 no-scrollbar">
             {order.items.map(item => (
               <div key={item.id} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2 flex-shrink-0">
-                <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded-lg" />
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded-lg" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Package className="w-4 h-4 text-primary/50" />
+                  </div>
+                )}
                 <div>
                   <p className="text-xs font-semibold text-gray-800 max-w-[120px] line-clamp-1">{item.name}</p>
-                  <p className="text-[10px] text-gray-400">Qty {item.quantity} · {item.size}</p>
+                  <p className="text-[10px] text-gray-400">Qty {item.quantity}{item.size ? ` · ${item.size}` : ""}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Action buttons */}
+          {/* Admin reply banner */}
+          <AdminReplyBanner orderId={order.id} />
+
+          {/* Actions */}
           <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={() => setExpanded(e => !e)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-50 hover:bg-gray-100 rounded-full text-gray-700 transition-colors"
-            >
-              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              {expanded ? "Hide Details" : "View Details"}
+            <button onClick={() => setExpanded(e => !e)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-50 hover:bg-gray-100 rounded-full text-gray-700 transition-colors">
+              <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+              {expanded ? "Hide" : "View Details"}
             </button>
-            <button
-              onClick={() => setInvoiceOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-50 hover:bg-gray-100 rounded-full text-gray-700 transition-colors"
-            >
+            <button onClick={() => setInvoiceOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gray-50 hover:bg-gray-100 rounded-full text-gray-700 transition-colors">
               <FileText className="w-3 h-3" />Invoice
             </button>
-            <button
-              onClick={() => setIssueOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-amber-50 hover:bg-amber-100 rounded-full text-amber-700 transition-colors"
-            >
+            <button onClick={() => setIssueOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-amber-50 hover:bg-amber-100 rounded-full text-amber-700 transition-colors">
               <AlertCircle className="w-3 h-3" />Raise Issue
             </button>
             {canReturn && (
-              <button
-                onClick={() => setReturnOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 rounded-full text-rose-700 transition-colors"
-              >
+              <button onClick={() => setReturnOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 rounded-full text-rose-700 transition-colors">
                 <RotateCcw className="w-3 h-3" />Return
               </button>
             )}
@@ -454,77 +370,47 @@ function OrderCard({ order, index }: { order: MockOrder; index: number }) {
           </div>
         </div>
 
-        {/* Expanded details */}
+        {/* Expanded */}
         <AnimatePresence>
           {expanded && (
-            <motion.div
-              className="border-t border-gray-100 bg-gray-50/50"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              style={{ overflow: "hidden" }}
-            >
+            <motion.div className="border-t border-gray-100 bg-gray-50/50"
+              initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3 }} style={{ overflow: "hidden" }}>
               <div className="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Delivery Timeline */}
+                {/* Timeline */}
                 <div>
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Delivery Timeline</h4>
                   <OrderTimeline order={order} />
                 </div>
 
-                {/* Right side details */}
                 <div className="space-y-4">
-                  {/* Shipment info */}
+                  {/* Shipment */}
                   {order.courier && (
                     <div>
                       <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Shipment Info</h4>
                       <div className="bg-white rounded-xl p-3 border border-gray-100 space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-500">Courier</span>
-                          <span className="font-semibold text-gray-800">{order.courier}</span>
-                        </div>
-                        {order.trackingId && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-500">Tracking ID</span>
-                            <span className="font-mono font-semibold text-primary text-[10px]">{order.trackingId}</span>
+                        {[
+                          { label: "Courier", value: order.courier },
+                          order.trackingId ? { label: "Tracking ID", value: order.trackingId, mono: true } : null,
+                          order.currentLocation ? { label: "Location", value: order.currentLocation, icon: MapPin } : null,
+                          order.estimatedDelivery ? { label: "Est. Delivery", value: fmtDate(order.estimatedDelivery), icon: Calendar } : null,
+                          order.deliveryAgent ? { label: "Agent", value: order.deliveryAgent } : null,
+                        ].filter(Boolean).map((row: any, i) => (
+                          <div key={i} className="flex items-center justify-between text-xs">
+                            <span className="text-gray-500">{row.label}</span>
+                            <span className={`font-semibold text-gray-800 ${row.mono ? "font-mono text-[10px] text-primary" : ""}`}>{row.value}</span>
                           </div>
-                        )}
-                        {order.currentLocation && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-500 flex items-center gap-1"><MapPin className="w-2.5 h-2.5" />Location</span>
-                            <span className="font-semibold text-gray-800">{order.currentLocation}</span>
-                          </div>
-                        )}
-                        {order.estimatedDelivery && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-500 flex items-center gap-1"><Calendar className="w-2.5 h-2.5" />Est. Delivery</span>
-                            <span className="font-semibold text-gray-800">{formatDate(order.estimatedDelivery)}</span>
-                          </div>
-                        )}
-                        {order.deliveryAgent && (
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-500">Agent</span>
-                            <span className="font-semibold text-gray-800 flex items-center gap-1">
-                              {order.deliveryAgent}
-                              {order.deliveryAgentPhone && (
-                                <a href={`tel:${order.deliveryAgentPhone}`} className="text-primary">
-                                  <Phone className="w-2.5 h-2.5" />
-                                </a>
-                              )}
-                            </span>
-                          </div>
-                        )}
+                        ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Shipping address */}
+                  {/* Address */}
                   <div>
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Shipping Address</h4>
                     <div className="bg-white rounded-xl p-3 border border-gray-100 text-xs text-gray-700 space-y-0.5">
                       <p className="font-semibold text-gray-900">{order.customerName}</p>
-                      <p>{order.shippingAddress.line1}{order.shippingAddress.line2 ? `, ${order.shippingAddress.line2}` : ""}</p>
-                      <p>{order.shippingAddress.city}, {order.shippingAddress.state} – {order.shippingAddress.pincode}</p>
+                      <p>{order.shippingAddress}</p>
                       <p className="flex items-center gap-1 text-gray-500 pt-0.5"><Phone className="w-2.5 h-2.5" />{order.customerPhone}</p>
                     </div>
                   </div>
@@ -533,46 +419,24 @@ function OrderCard({ order, index }: { order: MockOrder; index: number }) {
                   <div>
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Payment</h4>
                     <div className="bg-white rounded-xl p-3 border border-gray-100 space-y-1 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Method</span>
-                        <span className="font-semibold text-gray-800">{order.paymentMethod}</span>
-                      </div>
-                      {order.paymentId && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">ID</span>
-                          <span className="font-mono text-[9px] text-gray-600">{order.paymentId}</span>
-                        </div>
+                      <div className="flex justify-between"><span className="text-gray-500">Method</span><span className="font-semibold text-gray-800">{order.paymentMethod}</span></div>
+                      {order.razorpayPaymentId && (
+                        <div className="flex justify-between"><span className="text-gray-500">Payment ID</span><span className="font-mono text-[9px] text-gray-600">{order.razorpayPaymentId}</span></div>
                       )}
                       <div className="flex justify-between font-semibold border-t border-gray-100 pt-1 mt-1">
-                        <span className="text-gray-700">Total Paid</span>
-                        <span className="text-gray-900">{formatCurrency(order.totalAmount)}</span>
+                        <span className="text-gray-700">Total Paid</span><span className="text-gray-900">{fmtCur(order.totalAmount)}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Refund status */}
+                  {/* Refund */}
                   {order.refundStatus && (
                     <div>
-                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Refund Status</h4>
-                      <div className={`rounded-xl p-3 border text-xs space-y-1 ${
-                        order.refundStatus === "completed" ? "bg-green-50 border-green-200" :
-                        order.refundStatus === "processing" ? "bg-amber-50 border-amber-200" :
-                        "bg-gray-50 border-gray-200"
-                      }`}>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Amount</span>
-                          <span className="font-bold">{formatCurrency(order.refundAmount ?? order.totalAmount)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Method</span>
-                          <span className="font-semibold">{order.refundMethod}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Status</span>
-                          <span className={`font-bold capitalize ${order.refundStatus === "completed" ? "text-green-700" : "text-amber-700"}`}>
-                            {order.refundStatus}
-                          </span>
-                        </div>
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Refund</h4>
+                      <div className={`rounded-xl p-3 border text-xs space-y-1 ${order.refundStatus === "completed" ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}`}>
+                        <div className="flex justify-between"><span className="text-gray-600">Amount</span><span className="font-bold">{fmtCur(order.refundAmount ?? order.totalAmount)}</span></div>
+                        {order.refundMethod && <div className="flex justify-between"><span className="text-gray-600">Method</span><span className="font-semibold">{order.refundMethod}</span></div>}
+                        <div className="flex justify-between"><span className="text-gray-600">Status</span><span className={`font-bold capitalize ${order.refundStatus === "completed" ? "text-green-700" : "text-amber-700"}`}>{order.refundStatus}</span></div>
                       </div>
                     </div>
                   )}
@@ -580,8 +444,7 @@ function OrderCard({ order, index }: { order: MockOrder; index: number }) {
                   {/* Notes */}
                   {order.notes && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-start gap-2">
-                      <MessageSquare className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                      <span>{order.notes}</span>
+                      <MessageSquare className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" /><span>{order.notes}</span>
                     </div>
                   )}
                 </div>
@@ -591,7 +454,6 @@ function OrderCard({ order, index }: { order: MockOrder; index: number }) {
         </AnimatePresence>
       </motion.div>
 
-      {/* Modals */}
       <IssueModal open={issueOpen} onClose={() => setIssueOpen(false)} order={order} />
       <ReturnModal open={returnOpen} onClose={() => setReturnOpen(false)} order={order} />
       <InvoiceModal open={invoiceOpen} onClose={() => setInvoiceOpen(false)} order={order} />
@@ -599,21 +461,38 @@ function OrderCard({ order, index }: { order: MockOrder; index: number }) {
   );
 }
 
+// ─── Admin Reply Banner (shows if admin has replied to an issue for this order) ──
+function AdminReplyBanner({ orderId }: { orderId: string }) {
+  const { issues } = useIssues();
+  const replied = issues.find(i => i.orderId === orderId && i.adminReply && i.status === "resolved");
+  if (!replied) return null;
+  return (
+    <motion.div className="mt-2 flex items-start gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2"
+      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+      <CheckCircle className="w-3.5 h-3.5 text-green-600 mt-0.5 flex-shrink-0" />
+      <div className="text-xs">
+        <span className="font-semibold text-green-800">Admin replied to your issue: </span>
+        <span className="text-green-700">{replied.adminReply}</span>
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function MyOrders() {
-  const [activeTab, setActiveTab] = useState<ExtendedOrderStatus | "all">("all");
+  const { orders, seedIfEmpty } = useOrders();
+  const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"newest" | "oldest" | "highest" | "lowest">("newest");
 
-  const orders = MOCK_ORDERS;
+  useEffect(() => { seedIfEmpty(); }, [seedIfEmpty]);
 
   const stats = useMemo(() => ({
     total: orders.length,
     delivered: orders.filter(o => o.status === "delivered").length,
     active: orders.filter(o => ["pending","confirmed","processing","shipped","out_for_delivery"].includes(o.status)).length,
     cancelled: orders.filter(o => o.status === "cancelled").length,
-    returned: orders.filter(o => o.status === "returned").length,
-  }), []);
+  }), [orders]);
 
   const filtered = useMemo(() => {
     let list = [...orders];
@@ -622,28 +501,25 @@ export default function MyOrders() {
       const q = search.toLowerCase();
       list = list.filter(o =>
         o.orderNumber.toLowerCase().includes(q) ||
+        o.id.toLowerCase().includes(q) ||
         o.items.some(i => i.name.toLowerCase().includes(q)) ||
         (o.trackingId ?? "").toLowerCase().includes(q)
       );
     }
-    if (sort === "newest") list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    if (sort === "oldest") list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    if (sort === "newest")  list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    if (sort === "oldest")  list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     if (sort === "highest") list.sort((a, b) => b.totalAmount - a.totalAmount);
-    if (sort === "lowest") list.sort((a, b) => a.totalAmount - b.totalAmount);
+    if (sort === "lowest")  list.sort((a, b) => a.totalAmount - b.totalAmount);
     return list;
   }, [orders, activeTab, search, sort]);
 
   return (
     <div className="min-h-screen bg-gray-50/60">
       <Navbar />
-
       <div className="max-w-5xl mx-auto px-4 pb-16 pt-24">
-        {/* Page header */}
-        <motion.div
-          className="mb-6"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
+
+        {/* Header */}
+        <motion.div className="mb-6" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <Link href="/">
             <button className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary transition-colors mb-3">
               <ArrowLeft className="w-3.5 h-3.5" />Back to Home
@@ -660,30 +536,24 @@ export default function MyOrders() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <StatCard label="Total Orders"  value={stats.total}     icon={Package}      color="bg-primary"      delay={0} />
-          <StatCard label="Delivered"     value={stats.delivered} icon={CheckCircle}  color="bg-green-500"    delay={0.07} />
-          <StatCard label="Active"        value={stats.active}    icon={Truck}        color="bg-blue-500"     delay={0.14} />
-          <StatCard label="Cancelled"     value={stats.cancelled} icon={XCircle}      color="bg-red-400"      delay={0.21} />
+          <StatCard label="Total Orders" value={stats.total}     icon={Package}      bg="bg-primary"    delay={0} />
+          <StatCard label="Delivered"    value={stats.delivered} icon={CheckCircle}  bg="bg-green-500"  delay={0.07} />
+          <StatCard label="Active"       value={stats.active}    icon={Truck}        bg="bg-blue-500"   delay={0.14} />
+          <StatCard label="Cancelled"    value={stats.cancelled} icon={XCircle}      bg="bg-red-400"    delay={0.21} />
         </div>
 
         {/* Search + Sort */}
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search by order ID, product or tracking number…"
-              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-primary transition-colors"
-            />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search order ID, product or tracking number…"
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-primary transition-colors" />
           </div>
           <div className="relative">
             <SortAsc className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-            <select
-              value={sort}
-              onChange={e => setSort(e.target.value as any)}
-              className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-primary appearance-none cursor-pointer"
-            >
+            <select value={sort} onChange={e => setSort(e.target.value as any)}
+              className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-primary appearance-none cursor-pointer">
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
               <option value="highest">Highest Amount</option>
@@ -695,15 +565,8 @@ export default function MyOrders() {
         {/* Tabs */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 mb-5 no-scrollbar">
           {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                activeTab === tab.key
-                  ? "bg-primary text-white shadow-md shadow-primary/20"
-                  : "bg-white border border-gray-200 text-gray-600 hover:border-primary/40"
-              }`}
-            >
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${activeTab === tab.key ? "bg-primary text-white shadow-md shadow-primary/20" : "bg-white border border-gray-200 text-gray-600 hover:border-primary/40"}`}>
               {tab.label}
               {tab.key !== "all" && (
                 <span className={`ml-1.5 text-[10px] ${activeTab === tab.key ? "opacity-70" : "text-gray-400"}`}>
@@ -714,16 +577,11 @@ export default function MyOrders() {
           ))}
         </div>
 
-        {/* Orders */}
+        {/* List */}
         <AnimatePresence mode="wait">
           {filtered.length === 0 ? (
-            <motion.div
-              key="empty"
-              className="flex flex-col items-center justify-center py-20 text-center"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+            <motion.div key="empty" className="flex flex-col items-center justify-center py-20 text-center"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-4">
                 <ShoppingBag className="w-8 h-8 text-primary/30" />
               </div>
@@ -737,9 +595,7 @@ export default function MyOrders() {
             </motion.div>
           ) : (
             <motion.div key="list" className="space-y-3">
-              {filtered.map((order, i) => (
-                <OrderCard key={order.id} order={order} index={i} />
-              ))}
+              {filtered.map((order, i) => <OrderCard key={order.id} order={order} index={i} />)}
             </motion.div>
           )}
         </AnimatePresence>
