@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { Navbar } from "@/components/sections/Navbar";
 import { Hero } from "@/components/sections/Hero";
 import { Categories } from "@/components/sections/Categories";
@@ -16,7 +17,6 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { CartToast } from "@/components/CartToast";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { ProductModal } from "@/components/ProductModal";
-import { Spinner } from "@/components/ui/spinner";
 import { Product, Category } from "@/data/mock-data";
 import { Truck, ShieldCheck, RotateCcw, Scissors } from "lucide-react";
 
@@ -52,33 +52,21 @@ function FeatureStrip() {
 export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [activeFilter, setActiveFilter] = useState<Category | "All">("All");
-  const [isLoading, setIsLoading] = useState(true);
+  const [showContent, setShowContent] = useState(false);
 
-  useEffect(() => {
-    // Simulate page loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+  const handleLoadingDone = useCallback(() => {
+    setShowContent(true);
   }, []);
 
   const handleCategoryFilter = (cat: Category) => {
     setActiveFilter(cat);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Spinner size="lg" className="mx-auto mb-4" />
-          <p className="text-muted-foreground font-body">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen relative flex flex-col bg-background">
+    <>
+      <LoadingScreen onExitComplete={handleLoadingDone} />
+      {showContent && (
+      <div className="min-h-screen relative flex flex-col bg-background">
       <Navbar />
       <main className="flex-1">
         <Hero />
@@ -148,5 +136,7 @@ export default function Home() {
         onSelectProduct={setSelectedProduct}
       />
     </div>
+      )}
+    </>
   );
 }
