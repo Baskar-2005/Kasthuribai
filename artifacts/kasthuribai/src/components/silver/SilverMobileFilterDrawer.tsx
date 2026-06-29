@@ -70,7 +70,7 @@ export function SilverMobileFilterDrawer({
             </button>
           </div>
 
-          <div className="h-[calc(100vh-60px)] overflow-hidden">
+          <div className="h-[calc(100vh-60px)] overflow-y-auto px-4 py-4">
             <SilverFilterPanel
               state={state}
               setState={setState}

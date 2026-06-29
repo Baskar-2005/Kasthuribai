@@ -1,25 +1,47 @@
-import { useMemo } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import type { SilverFilterPanelState, SilverSortKey } from "./types";
 
-import type { SilverFilterPanelState } from "./types";
-import { SilverSortKey } from "./types";
+const sortOptions: { key: SilverSortKey; label: string }[] = [
+  { key: "default",      label: "Featured"            },
+  { key: "newest",       label: "Newest First"        },
+  { key: "best_selling", label: "Best Selling"        },
+  { key: "price_low",    label: "Price: Low to High"  },
+  { key: "price_high",   label: "Price: High to Low"  },
+];
 
-import { SILVER_PRODUCTS } from "@/data/silver-mock-data";
+const priceQuick = [
+  { id: "under1000",  label: "Under ₹1,000",   min: 0,    max: 1000   },
+  { id: "1k_2k",      label: "₹1,000–₹2,000",  min: 1000, max: 2000   },
+  { id: "2k_3k",      label: "₹2,000–₹3,000",  min: 2000, max: 3000   },
+  { id: "3k_5k",      label: "₹3,000–₹5,000",  min: 3000, max: 5000   },
+  { id: "5kplus",     label: "₹5,000+",         min: 5000, max: 999999 },
+];
 
-function parseWeightG(weight: string): number {
-  const m = weight.match(/\d+(?:\.\d+)?/);
-  return m ? Number(m[0]) : 0;
-}
+const purityOptions = [
+  { id: "925" as const,      label: "925 Silver"      },
+  { id: "999" as const,      label: "999 Pure Silver" },
+  { id: "sterling" as const, label: "Sterling Silver" },
+  { id: "hallmark" as const, label: "Hallmarked"      },
+];
 
-function uniq<T>(arr: T[]): T[] {
-  return Array.from(new Set(arr));
+const availabilityOptions = [
+  { id: "inStock" as const,    label: "In Stock"      },
+  { id: "newArrivals" as const,label: "New Arrivals"  },
+  { id: "bestSellers" as const,label: "Best Sellers"  },
+  { id: "lowStock" as const,   label: "Low Stock"     },
+];
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="border-b border-slate-100 pb-5 mb-5 last:border-0 last:pb-0 last:mb-0">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 mb-3">{title}</p>
+      {children}
+    </div>
+  );
 }
 
 export function SilverFilterPanel({
   state,
   setState,
-  purityOptions,
-  weightMinMax,
   resultsCount,
   onClearAll,
   onApplyMobile,
@@ -30,210 +52,159 @@ export function SilverFilterPanel({
   weightMinMax: { min: number; max: number };
   resultsCount: number;
   onClearAll: () => void;
-  // for mobile drawer actions (no-op for desktop)
   onApplyMobile?: () => void;
 }) {
-  const sortOptions: { key: SilverSortKey; label: string }[] = [
-    { key: "default", label: "Default" },
-    { key: "newest", label: "Newest First" },
-    { key: "best_selling", label: "Best Selling" },
-    { key: "price_low", label: "Price Low to High" },
-    { key: "price_high", label: "Price High to Low" },
-  ];
-
-  const purityCheckboxes = [
-    { id: "925", label: "925 Silver" },
-    { id: "999", label: "999 Silver" },
-    { id: "sterling", label: "Sterling Silver" },
-    { id: "hallmark", label: "Hallmarked Silver" },
-  ] as const;
-
-  const weightRanges = [
-    { id: "0_5", label: "0–5g", min: 0, max: 5 },
-    { id: "5_10", label: "5–10g", min: 5, max: 10 },
-    { id: "10_20", label: "10–20g", min: 10, max: 20 },
-    { id: "20p", label: "20g+", min: 20, max: 9999 },
-  ] as const;
-
-  const availabilityCheckboxes = [
-    { id: "inStock", label: "In Stock" },
-    { id: "outOfStock", label: "Out of Stock" },
-    { id: "newArrivals", label: "New Arrivals" },
-    { id: "bestSellers", label: "Best Sellers" },
-  ] as const;
-
-  const priceQuick = [
-    { id: "under500", label: "Under ₹500", min: 0, max: 500 },
-    { id: "500_1000", label: "₹500–₹1000", min: 500, max: 1000 },
-    { id: "1000_2000", label: "₹1000–₹2000", min: 1000, max: 2000 },
-    { id: "2000_5000", label: "₹2000–₹5000", min: 2000, max: 5000 },
-    { id: "5000p", label: "₹5000+", min: 5000, max: 999999 },
-  ];
-
-  const activePurity = useMemo(() => {
-    const ids = Object.entries(state.purity)
-      .filter(([, v]) => v)
-      .map(([k]) => k);
-    return ids;
-  }, [state.purity]);
+  const activePriceQuick = priceQuick.find(
+    (p) => p.min === state.minPrice && p.max === state.maxPrice
+  );
 
   return (
-    <div className="w-full max-h-[calc(100vh-7rem)] overflow-y-auto pr-2 filter-scrollbar">
-      <div className="text-xs font-body font-bold text-slate-700 uppercase tracking-widest">
-        Handpicked for Shine, Purity & Gifting
-      </div>
-      <div className="mt-1 text-sm font-body font-bold text-slate-900">Showing {resultsCount} Results</div>
-
-      <div className="mt-5">
-        <p className="text-[11px] text-slate-600 font-body font-bold uppercase">Sort By</p>
-        <div className="mt-2">
-          <select
-            value={state.sortKey}
-            onChange={(e) => setState({ ...state, sortKey: e.target.value as SilverSortKey })}
-            className="w-full border border-slate-200 rounded-2xl px-3 py-3 text-sm font-body outline-none focus:ring-2 focus:ring-slate-200 bg-white"
-          >
-            {sortOptions.map((o) => (
-              <option value={o.key} key={o.key}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+    <div className="w-full">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <p className="font-display font-bold text-slate-900 text-base">Filters</p>
+          <p className="text-xs text-slate-400 font-body mt-0.5">{resultsCount} results</p>
         </div>
+        <button
+          onClick={onClearAll}
+          className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+        >
+          Clear all
+        </button>
       </div>
 
-      <div className="mt-5">
-        <p className="text-[11px] text-slate-600 font-body font-bold uppercase">Price Range</p>
+      {/* Sort */}
+      <Section title="Sort by">
+        <div className="flex flex-col gap-1.5">
+          {sortOptions.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setState({ ...state, sortKey: opt.key })}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-body font-medium transition-all ${
+                state.sortKey === opt.key
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+              }`}
+            >
+              {opt.label}
+              {state.sortKey === opt.key && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+              )}
+            </button>
+          ))}
+        </div>
+      </Section>
 
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-white border border-slate-200 p-3">
-            <p className="text-[11px] text-slate-600 font-body font-bold uppercase">Min</p>
+      {/* Price */}
+      <Section title="Price Range">
+        <div className="flex flex-col gap-1.5 mb-3">
+          {priceQuick.map((p) => {
+            const active = activePriceQuick?.id === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setState({ ...state, minPrice: p.min, maxPrice: p.max })}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-body font-medium transition-all ${
+                  active
+                    ? "bg-slate-900 text-white"
+                    : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                }`}
+              >
+                {p.label}
+                {active && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+        {/* Custom min/max */}
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">Min ₹</label>
             <input
               type="number"
               value={state.minPrice}
               onChange={(e) => setState({ ...state, minPrice: Number(e.target.value || 0) })}
-              className="mt-2 w-full text-sm font-body border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-slate-200"
+              className="w-full text-sm font-body border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-slate-200 bg-white"
+              placeholder="0"
             />
           </div>
-          <div className="rounded-2xl bg-white border border-slate-200 p-3">
-            <p className="text-[11px] text-slate-600 font-body font-bold uppercase">Max</p>
+          <div>
+            <label className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block mb-1">Max ₹</label>
             <input
               type="number"
               value={state.maxPrice}
-              onChange={(e) => setState({ ...state, maxPrice: Number(e.target.value || 0) })}
-              className="mt-2 w-full text-sm font-body border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-slate-200"
+              onChange={(e) => setState({ ...state, maxPrice: Number(e.target.value || 100000) })}
+              className="w-full text-sm font-body border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-slate-200 bg-white"
+              placeholder="100000"
             />
           </div>
         </div>
+      </Section>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {priceQuick.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setState({ ...state, minPrice: c.min, maxPrice: c.max })}
-              className="px-3 py-1.5 rounded-full text-[11px] font-body font-bold border border-slate-200 bg-white/70 hover:bg-white hover:border-slate-300 transition"
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-5">
-        <p className="text-[11px] text-slate-600 font-body font-bold uppercase">Purity</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {purityCheckboxes.map((p) => (
-            <label
-              key={p.id}
-              className="flex items-center gap-2 rounded-2xl bg-white border border-slate-200 px-3 py-2"
-            >
-              <input
-                type="checkbox"
-                checked={state.purity[p.id]}
-                onChange={(e) => setState({ ...state, purity: { ...state.purity, [p.id]: e.target.checked } })}
-                className="accent-slate-900"
-              />
-              <span className="text-xs font-body font-bold text-slate-900">{p.label}</span>
-            </label>
-          ))}
-        </div>
-
-        <div className="mt-2 text-[11px] text-slate-500 font-body">Select multiple to broaden results.</div>
-      </div>
-
-      <div className="mt-5">
-        <p className="text-[11px] text-slate-600 font-body font-bold uppercase">Weight Range</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {weightRanges.map((w) => {
-            const active = state.weightMin <= w.min && state.weightMax >= w.max;
+      {/* Purity */}
+      <Section title="Silver Purity">
+        <div className="grid grid-cols-2 gap-2">
+          {purityOptions.map((p) => {
+            const checked = state.purity[p.id];
             return (
-              <label
-                key={w.id}
-                className={
-                  "flex items-center gap-2 rounded-2xl border px-3 py-2 " +
-                  (active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white/70 text-slate-900")
-                }
+              <button
+                key={p.id}
+                onClick={() => setState({ ...state, purity: { ...state.purity, [p.id]: !checked } })}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                  checked
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                }`}
               >
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={(e) => {
-                    if (!e.target.checked) return;
-                    setState({
-                      ...state,
-                      weightMin: w.min,
-                      weightMax: w.max === 9999 ? weightMinMax.max : w.max,
-                    });
-                  }}
-                  className="accent-slate-900"
-                />
-                <span className="text-xs font-body font-bold">{w.label}</span>
-              </label>
+                <span className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                  checked ? "border-white bg-amber-400" : "border-slate-300"
+                }`}>
+                  {checked && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                </span>
+                {p.label}
+              </button>
             );
           })}
         </div>
-      </div>
+      </Section>
 
-      <div className="mt-5">
-        <p className="text-[11px] text-slate-600 font-body font-bold uppercase">Availability</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {availabilityCheckboxes.map((a) => (
-            <label key={a.id} className="flex items-center gap-2 rounded-2xl bg-white border border-slate-200 px-3 py-2">
-              <input
-                type="checkbox"
-                checked={state.availability[a.id]}
-                onChange={(e) => setState({ ...state, availability: { ...state.availability, [a.id]: e.target.checked } })}
-                className="accent-slate-900"
-              />
-              <span className="text-xs font-body font-bold text-slate-900">{a.label}</span>
-            </label>
-          ))}
+      {/* Availability */}
+      <Section title="Availability">
+        <div className="grid grid-cols-2 gap-2">
+          {availabilityOptions.map((a) => {
+            const checked = state.availability[a.id];
+            return (
+              <button
+                key={a.id}
+                onClick={() => setState({ ...state, availability: { ...state.availability, [a.id]: !checked } })}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border ${
+                  checked
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <span className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                  checked ? "border-white bg-amber-400" : "border-slate-300"
+                }`}>
+                  {checked && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                </span>
+                {a.label}
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </Section>
 
-      <div className="mt-5">
+      {/* Mobile apply */}
+      {onApplyMobile && (
         <button
-          type="button"
-          onClick={onClearAll}
-          className="w-full rounded-2xl border border-slate-200 bg-white/70 px-3 py-3 text-sm font-body font-bold text-slate-900 hover:bg-white hover:border-slate-300 transition"
+          onClick={onApplyMobile}
+          className="w-full mt-2 bg-slate-900 text-white py-3.5 rounded-2xl font-semibold text-sm"
         >
-          Clear All
+          Show {resultsCount} Results
         </button>
-      </div>
-
-      <div className="mt-4 flex items-center gap-2 text-[11px] text-slate-500 font-body">
-        <SlidersHorizontal className="w-3 h-3" />
-        Live filters
-      </div>
-
-      {/* Mobile apply is handled by parent; this panel is desktop-first */}
-      <div className="hidden" aria-hidden>
-        {uniq(SILVER_PRODUCTS.map((p) => p.purity))}
-        {activePurity.join(",")}
-        {/* avoid rendering callbacks; hidden for unused values only */}
-        {purityOptions.length}
-      </div>
+      )}
     </div>
   );
 }
-

@@ -1,1 +1,2 @@
 - [Admin Dashboard](admin-dashboard.md) — password-protected at /admin; password is kasthuribai@admin; uses Zustand orders store (localStorage), not API server.
+- [Silver Corner architecture](silver-corner.md) — filtering pipeline, image path conventions, WhatsApp env var, and multi-purity/availability filter logic.
