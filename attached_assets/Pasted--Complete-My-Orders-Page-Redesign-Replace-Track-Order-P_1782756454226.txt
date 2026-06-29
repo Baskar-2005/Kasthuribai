@@ -1,0 +1,536 @@
+# Complete My Orders Page Redesign (Replace Track Order Page)
+
+## Objective
+
+I want to completely redesign the **My Orders** experience of the Kasthuribai website.
+
+The current **Track Order** page should be removed entirely.
+
+Instead, all order tracking, shipment information, order management, returns, refunds, and customer support should be integrated into a single premium **My Orders** page.
+
+This should not be a simple demo page. Build it as a **fully functional order management dashboard** using mock data that can later be connected to APIs.
+
+The design language must match the rest of the Kasthuribai website:
+
+* Premium
+* Modern
+* Elegant
+* Luxury Fashion Brand
+* Clean White Theme
+* Maroon/Burgundy + Gold accents
+* Smooth Framer Motion animations
+* Beautiful micro interactions
+* Fully responsive
+
+The page should feel comparable to premium e-commerce platforms like Myntra, Amazon, Nykaa Fashion, AJIO, and Tanishq.
+
+---
+
+# Remove
+
+Delete the existing:
+
+* Track Order Page
+* Track Order Route
+* Track Order Components
+* Track Order Navigation Entry
+
+There should only be **My Orders**.
+
+---
+
+# My Orders Page Structure
+
+## Hero Section
+
+Create a premium hero section containing:
+
+* My Orders
+* Welcome message
+* Total Orders
+* Delivered Orders
+* Active Orders
+* Cancelled Orders
+
+Display these as elegant animated statistic cards.
+
+Example:
+
+```
+📦 Total Orders
+
+18 Orders
+
+✔ Delivered
+
+14
+
+🚚 In Transit
+
+2
+
+↩ Returns
+
+1
+
+❌ Cancelled
+
+1
+```
+
+Animate cards while entering viewport.
+
+---
+
+# Order Status Tabs
+
+Create filter tabs:
+
+```
+All
+
+Active
+
+Delivered
+
+Processing
+
+Shipped
+
+Out For Delivery
+
+Cancelled
+
+Returned
+
+Refunded
+```
+
+Changing tabs should instantly filter the order list.
+
+---
+
+# Beautiful Order Cards
+
+Each order should be displayed as a premium expandable card.
+
+Each card contains:
+
+* Product Image
+* Product Name
+* Variant
+* Quantity
+* Order Date
+* Order Number
+* Payment Method
+* Total Amount
+* Current Status
+
+Example status badges:
+
+```
+Delivered
+
+Shipped
+
+Processing
+
+Cancelled
+
+Returned
+
+Refunded
+```
+
+Hover animations required.
+
+---
+
+# Expandable Order Details
+
+Clicking an order expands it beautifully.
+
+Show:
+
+Order Summary
+
+Customer Information
+
+Shipping Address
+
+Billing Address
+
+Payment Details
+
+Invoice Details
+
+Expected Delivery
+
+Delivery Partner
+
+Tracking ID
+
+Estimated Delivery
+
+Gift Options
+
+Order Notes
+
+Animations should be smooth.
+
+---
+
+# Animated Delivery Timeline
+
+Instead of a separate Track Order page,
+
+display an animated shipment timeline inside every order.
+
+Example:
+
+```
+✔ Order Placed
+
+↓
+
+✔ Payment Confirmed
+
+↓
+
+✔ Packed
+
+↓
+
+✔ Shipped
+
+↓
+
+🚚 Out For Delivery
+
+↓
+
+📦 Delivered
+```
+
+Requirements:
+
+Animated progress line
+
+Current step glowing
+
+Completed steps checked
+
+Future steps faded
+
+Smooth progress animation
+
+---
+
+# Live Shipment Section
+
+Display:
+
+Courier Partner
+
+Tracking Number
+
+Current Location
+
+Current Hub
+
+Estimated Arrival
+
+Delivery Executive (Mock)
+
+Contact Number (Mock)
+
+Vehicle Status
+
+Map Placeholder
+
+Show current shipment movement beautifully.
+
+---
+
+# Order Actions
+
+Each order should include actions:
+
+View Details
+
+Download Invoice
+
+Track Shipment
+
+Raise Issue
+
+Request Return
+
+Request Refund
+
+Cancel Order
+
+Reorder
+
+Buy Again
+
+Share Order
+
+Each action should open a modal or drawer.
+
+---
+
+# Raise Issue
+
+Functional issue form.
+
+Options:
+
+```
+Wrong Product
+
+Damaged Item
+
+Late Delivery
+
+Payment Issue
+
+Missing Product
+
+Other
+```
+
+Include:
+
+Description
+
+Upload Image
+
+Submit
+
+---
+
+# Return Request
+
+Functional flow.
+
+Reason selection.
+
+Pickup Date.
+
+Comments.
+
+Confirmation.
+
+Return status.
+
+---
+
+# Refund Center
+
+Display:
+
+Refund Amount
+
+Refund Method
+
+Expected Date
+
+Refund Timeline
+
+Status
+
+Examples:
+
+Processing
+
+Approved
+
+Completed
+
+Rejected
+
+Animated progress.
+
+---
+
+# Invoice Viewer
+
+Beautiful invoice modal.
+
+Include:
+
+Order ID
+
+GST
+
+Items
+
+Taxes
+
+Discounts
+
+Shipping
+
+Grand Total
+
+Download PDF button.
+
+---
+
+# Delivery Timeline Animation
+
+Use Framer Motion.
+
+Progress line grows.
+
+Icons animate.
+
+Status pulses.
+
+Cards slide.
+
+Everything should feel premium.
+
+---
+
+# Search & Filter
+
+Allow searching by:
+
+Order ID
+
+Product Name
+
+Tracking Number
+
+Also support sorting:
+
+Newest
+
+Oldest
+
+Highest Amount
+
+Lowest Amount
+
+Delivered
+
+Pending
+
+---
+
+# Pagination / Infinite Scroll
+
+Support loading additional orders.
+
+Use skeleton loaders while loading.
+
+---
+
+# Empty State
+
+If no orders exist,
+
+show a premium illustration with:
+
+```
+No Orders Yet
+
+Start shopping to see your orders here.
+```
+
+Include a "Continue Shopping" button.
+
+---
+
+# Notifications
+
+Show beautiful badges:
+
+New Update
+
+Refund Initiated
+
+Delivered Today
+
+Out For Delivery
+
+Payment Failed
+
+---
+
+# Mobile Experience
+
+Everything must be fully responsive.
+
+Use:
+
+Bottom sheets
+
+Accordions
+
+Expandable cards
+
+Swipe-friendly interactions
+
+Sticky action buttons
+
+---
+
+# Technical Requirements
+
+Create modular components:
+
+```
+OrderStats.tsx
+
+OrderTabs.tsx
+
+OrderCard.tsx
+
+OrderTimeline.tsx
+
+ShipmentTracker.tsx
+
+OrderActions.tsx
+
+RefundPanel.tsx
+
+ReturnPanel.tsx
+
+RaiseIssueModal.tsx
+
+InvoiceModal.tsx
+```
+
+Use React + TypeScript.
+
+Use reusable interfaces.
+
+Use Framer Motion for animations.
+
+Keep business logic separate from UI.
+
+---
+
+# Final Goal
+
+The new **My Orders** page should completely replace the existing Track Order page and become a comprehensive, premium order management dashboard.
+
+A customer should be able to:
+
+* View all orders
+* Filter orders
+* Track shipments in real time (mock data)
+* View animated delivery timeline
+* Download invoices
+* Raise support issues
+* Request returns
+* Request refunds
+* Cancel eligible orders
+* Reorder products
+* Monitor shipment status
+* Access every order-related feature from a single, elegant page
+
+The result should feel production-ready and worthy of a premium fashion e-commerce platform—not a simple demo or placeholder page.
