@@ -19,14 +19,14 @@ const PROFILE_LINKS = [
   { name: "My Orders", href: "/my-orders", icon: Package },
 ];
 
-function KasthuribaiLogo({ onClick, scrolled }: { onClick: () => void; scrolled: boolean }) {
+function KasthuribaiLogo({ onClick, dark }: { onClick: () => void; dark: boolean }) {
   return (
     <button onClick={onClick} className="flex items-center gap-2 group flex-shrink-0 focus:outline-none" aria-label="Kasthuribai – Home">
       <img src="/favicon.png" alt="Kasthuribai Logo" width="32" height="32" className="flex-shrink-0 sm:w-9 sm:h-9" />
       <div className="flex flex-col leading-none">
         <span className={cn(
-          "font-logo text-[13px] sm:text-[14px] font-semibold tracking-[0.18em] uppercase transition-colors duration-400",
-          scrolled ? "text-foreground group-hover:text-primary" : "text-white group-hover:text-gold"
+          "font-logo text-[13px] sm:text-[14px] font-semibold tracking-[0.18em] uppercase transition-colors duration-300",
+          dark ? "text-foreground group-hover:text-primary" : "text-white group-hover:text-gold"
         )}>
           Kasthuribai
         </span>
@@ -38,7 +38,12 @@ function KasthuribaiLogo({ onClick, scrolled }: { onClick: () => void; scrolled:
   );
 }
 
-export function Navbar() {
+interface NavbarProps {
+  /** Pass true only on the Home page — navbar stays hidden until user scrolls */
+  isHome?: boolean;
+}
+
+export function Navbar({ isHome = false }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -62,6 +67,8 @@ export function Navbar() {
       }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
+    // Check initial position
+    setScrolled(window.scrollY > 70);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -117,27 +124,16 @@ export function Navbar() {
     window.location.href = `/collections?product=${id}`;
   };
 
-  return (
-    <motion.nav
-      className="fixed top-0 left-0 right-0 z-50"
-      initial={false}
-    >
-      {/* ── Scrolled glass pill wrapper ── */}
-      <div className={cn(
-        "transition-all duration-500 ease-out",
-        scrolled ? "px-4 pt-3" : "px-0 pt-0"
-      )}>
-        <div className={cn(
-          "w-full transition-all duration-500 ease-out",
-          scrolled
-            ? "mx-auto max-w-[1100px] rounded-2xl border shadow-[0_8px_32px_rgba(0,0,0,0.18)] bg-white/70 backdrop-blur-2xl border-white/50 px-5 py-2"
-            : "bg-transparent px-4 sm:px-6 lg:px-10 py-0 border-transparent"
-        )}>
+  // ── Sticky navbar for non-home pages ──
+  // Always visible, white background, dark text
+  if (!isHome) {
+    return (
+      <nav className="sticky top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-10">
 
-          {/* ── DESKTOP ── */}
-          <div className="hidden md:flex items-center h-[60px] gap-5">
-
-            <KasthuribaiLogo onClick={() => handleNavigation("/")} scrolled={scrolled} />
+          {/* DESKTOP */}
+          <div className="hidden md:flex items-center h-[62px] gap-5">
+            <KasthuribaiLogo onClick={() => handleNavigation("/")} dark={true} />
 
             {/* Nav links */}
             <div className="flex items-center gap-0.5 lg:gap-1 flex-1 justify-center">
@@ -145,24 +141,16 @@ export function Navbar() {
                 <button
                   key={link.name}
                   onClick={() => handleNavigation(link.href)}
-                  className={cn(
-                    "relative text-[10px] lg:text-[10.5px] font-body font-semibold uppercase tracking-[0.12em] transition-all duration-300 group whitespace-nowrap px-2.5 py-1.5 rounded-lg",
-                    scrolled
-                      ? "text-gray-600 hover:text-primary hover:bg-primary/6"
-                      : "text-white/80 hover:text-white hover:bg-white/10"
-                  )}
+                  className="relative text-[10px] lg:text-[10.5px] font-body font-semibold uppercase tracking-[0.12em] transition-all duration-300 group whitespace-nowrap px-2.5 py-1.5 rounded-lg text-gray-700 hover:text-primary hover:bg-primary/6"
                 >
                   {link.name}
-                  <span className={cn(
-                    "absolute bottom-0.5 left-2.5 right-2.5 h-[1.5px] rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left bg-gold"
-                  )} />
+                  <span className="absolute bottom-0.5 left-2.5 right-2.5 h-[1.5px] rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left bg-gold" />
                 </button>
               ))}
             </div>
 
             {/* Right: Search + Bag + Profile */}
             <div className="flex items-center gap-1.5">
-
               {/* Search */}
               <div ref={searchRef} className="relative">
                 <AnimatePresence mode="wait">
@@ -173,28 +161,20 @@ export function Navbar() {
                       animate={{ width: 200, opacity: 1 }}
                       exit={{ width: 36, opacity: 0 }}
                       transition={{ duration: 0.28, ease: "easeOut" }}
-                      className={cn(
-                        "flex items-center gap-2 rounded-full border overflow-hidden",
-                        scrolled
-                          ? "bg-gray-100/80 border-gray-200"
-                          : "bg-white/12 backdrop-blur-md border-white/25"
-                      )}
+                      className="flex items-center gap-2 rounded-full border overflow-hidden bg-gray-100/80 border-gray-200"
                     >
-                      <Search className={cn("w-3.5 h-3.5 flex-shrink-0 ml-3", scrolled ? "text-gray-400" : "text-white/60")} />
+                      <Search className="w-3.5 h-3.5 flex-shrink-0 ml-3 text-gray-400" />
                       <input
                         autoFocus
                         type="text"
                         placeholder="Search..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className={cn(
-                          "bg-transparent py-2 pr-3 text-[11px] font-body outline-none w-full min-w-0",
-                          scrolled ? "text-foreground placeholder:text-muted-foreground" : "text-white placeholder:text-white/45"
-                        )}
+                        className="bg-transparent py-2 pr-3 text-[11px] font-body outline-none w-full min-w-0 text-foreground placeholder:text-muted-foreground"
                       />
                       {searchQuery && (
                         <button onClick={() => { setSearchQuery(""); setShowSuggestions(false); }} className="pr-2 flex-shrink-0">
-                          <X className={cn("w-3 h-3", scrolled ? "text-gray-400" : "text-white/50")} />
+                          <X className="w-3 h-3 text-gray-400" />
                         </button>
                       )}
                     </motion.div>
@@ -205,12 +185,7 @@ export function Navbar() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       onClick={() => setSearchOpen(true)}
-                      className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center transition-colors",
-                        scrolled
-                          ? "text-gray-500 hover:text-primary hover:bg-primary/8"
-                          : "text-white/75 hover:text-white hover:bg-white/12"
-                      )}
+                      className="w-8 h-8 rounded-full flex items-center justify-center transition-colors text-gray-600 hover:text-primary hover:bg-primary/8"
                     >
                       <Search className="w-4 h-4" />
                     </motion.button>
@@ -239,12 +214,7 @@ export function Navbar() {
               {/* Bag */}
               <button
                 onClick={() => setIsOpen(true)}
-                className={cn(
-                  "relative flex items-center gap-1.5 pl-3 pr-4 py-2 rounded-full transition-all duration-300 text-[11px] font-body font-semibold",
-                  scrolled
-                    ? "bg-primary text-white hover:bg-primary/90 shadow-sm"
-                    : "bg-white/12 backdrop-blur-md text-white border border-white/22 hover:bg-white/22"
-                )}
+                className="relative flex items-center gap-1.5 pl-3 pr-4 py-2 rounded-full transition-all duration-300 text-[11px] font-body font-semibold bg-primary text-white hover:bg-primary/90 shadow-sm"
               >
                 <ShoppingBag className={cn("w-3.5 h-3.5", cartBounce && "animate-cart-bounce")} />
                 <span>Bag</span>
@@ -259,12 +229,7 @@ export function Navbar() {
               <div ref={profileRef} className="relative">
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className={cn(
-                    "flex items-center gap-0.5 w-8 h-8 rounded-full transition-colors justify-center",
-                    scrolled
-                      ? "text-gray-500 hover:text-primary hover:bg-primary/8"
-                      : "text-white/75 hover:text-white hover:bg-white/12"
-                  )}
+                  className="flex items-center gap-0.5 w-8 h-8 rounded-full transition-colors justify-center text-gray-600 hover:text-primary hover:bg-primary/8"
                 >
                   <User className="w-4 h-4" />
                   <ChevronDown className={cn("w-2.5 h-2.5 transition-transform duration-200", profileOpen && "rotate-180")} />
@@ -295,26 +260,26 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* ── MOBILE ── */}
+          {/* MOBILE */}
           <div className="md:hidden flex items-center h-14 gap-2">
             <button
-              className={cn("p-1.5 transition-colors flex-shrink-0", scrolled ? "text-foreground hover:text-primary" : "text-white/85 hover:text-white")}
+              className="p-1.5 transition-colors flex-shrink-0 text-foreground hover:text-primary"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
             <div className="flex-1 flex justify-center">
-              <KasthuribaiLogo onClick={() => handleNavigation("/")} scrolled={scrolled} />
+              <KasthuribaiLogo onClick={() => handleNavigation("/")} dark={true} />
             </div>
             <button
               onClick={() => setSearchOpen(!searchOpen)}
-              className={cn("w-8 h-8 flex items-center justify-center rounded-full transition-colors", scrolled ? "text-gray-600 hover:text-primary hover:bg-primary/8" : "text-white/85 hover:text-white hover:bg-white/12")}
+              className="w-8 h-8 flex items-center justify-center rounded-full transition-colors text-gray-600 hover:text-primary hover:bg-primary/8"
             >
               <Search className="w-4 h-4" />
             </button>
             <button
               onClick={() => setIsOpen(true)}
-              className={cn("relative w-8 h-8 flex items-center justify-center rounded-full transition-colors flex-shrink-0", scrolled ? "text-gray-600 hover:text-primary hover:bg-secondary" : "text-white/85 hover:text-white hover:bg-white/12")}
+              className="relative w-8 h-8 flex items-center justify-center rounded-full transition-colors flex-shrink-0 text-gray-600 hover:text-primary hover:bg-secondary"
             >
               <ShoppingBag className={cn("w-4.5 h-4.5", cartBounce && "animate-cart-bounce")} />
               {getCartCount() > 0 && (
@@ -335,66 +300,293 @@ export function Navbar() {
                 transition={{ duration: 0.22 }}
                 className="md:hidden overflow-hidden"
               >
-                <div className={cn("flex items-center gap-2 rounded-full border mx-1 mb-2 overflow-hidden", scrolled ? "bg-gray-100 border-gray-200" : "bg-white/12 border-white/25")}>
-                  <Search className={cn("w-3.5 h-3.5 flex-shrink-0 ml-3", scrolled ? "text-gray-400" : "text-white/60")} />
+                <div className="flex items-center gap-2 rounded-full border mx-1 mb-2 overflow-hidden bg-gray-100 border-gray-200">
+                  <Search className="w-3.5 h-3.5 flex-shrink-0 ml-3 text-gray-400" />
                   <input
                     autoFocus
                     type="text"
                     placeholder="Search products..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className={cn("bg-transparent py-2.5 pr-3 text-[12px] font-body outline-none w-full", scrolled ? "text-foreground placeholder:text-muted-foreground" : "text-white placeholder:text-white/45")}
+                    className="bg-transparent py-2.5 pr-3 text-[12px] font-body outline-none w-full text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-      </div>
 
-      {/* Mobile dropdown menu */}
+        {/* Mobile dropdown */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="absolute left-3 right-3 mt-1 rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 md:hidden bg-white"
+            >
+              <div className="flex flex-col p-2">
+                {NAV_LINKS.map((link) => (
+                  <button
+                    key={link.name}
+                    onClick={() => handleNavigation(link.href)}
+                    className="text-left text-sm font-body font-medium transition-colors px-4 py-3 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary"
+                  >
+                    {link.name}
+                  </button>
+                ))}
+                <div className="my-1 h-px bg-gray-100" />
+                {PROFILE_LINKS.map((item) => (
+                  <button
+                    key={item.name}
+                    onClick={() => handleNavigation(item.href)}
+                    className="flex items-center gap-3 text-sm font-body font-medium transition-colors px-4 py-3 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary"
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.name}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+    );
+  }
+
+  // ── Home popup navbar — hidden at top, glass pill when scrolled ──
+  return (
+    <motion.nav
+      className="fixed top-0 left-0 right-0 z-50 pointer-events-none"
+      initial={false}
+    >
       <AnimatePresence>
-        {mobileMenuOpen && (
+        {scrolled && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            key="home-scrolled-nav"
+            initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className={cn(
-              "absolute left-3 right-3 mt-1 rounded-2xl shadow-2xl border overflow-hidden z-50 md:hidden",
-              scrolled
-                ? "top-[calc(100%)] bg-white/92 backdrop-blur-2xl border-white/50"
-                : "top-full bg-black/65 backdrop-blur-xl border-white/18"
-            )}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="pointer-events-auto px-4 pt-3"
           >
-            <div className="flex flex-col p-2">
-              {NAV_LINKS.map((link) => (
+            <div className="mx-auto max-w-[1100px] rounded-2xl border shadow-[0_8px_32px_rgba(0,0,0,0.18)] bg-white/80 backdrop-blur-2xl border-white/50 px-5 py-2">
+
+              {/* DESKTOP */}
+              <div className="hidden md:flex items-center h-[56px] gap-5">
+                <KasthuribaiLogo onClick={() => handleNavigation("/")} dark={true} />
+
+                <div className="flex items-center gap-0.5 lg:gap-1 flex-1 justify-center">
+                  {NAV_LINKS.map((link) => (
+                    <button
+                      key={link.name}
+                      onClick={() => handleNavigation(link.href)}
+                      className="relative text-[10px] lg:text-[10.5px] font-body font-semibold uppercase tracking-[0.12em] transition-all duration-300 group whitespace-nowrap px-2.5 py-1.5 rounded-lg text-gray-700 hover:text-primary hover:bg-primary/6"
+                    >
+                      {link.name}
+                      <span className="absolute bottom-0.5 left-2.5 right-2.5 h-[1.5px] rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left bg-gold" />
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <div ref={searchRef} className="relative">
+                    <AnimatePresence mode="wait">
+                      {searchOpen ? (
+                        <motion.div
+                          key="open"
+                          initial={{ width: 36, opacity: 0 }}
+                          animate={{ width: 200, opacity: 1 }}
+                          exit={{ width: 36, opacity: 0 }}
+                          transition={{ duration: 0.28, ease: "easeOut" }}
+                          className="flex items-center gap-2 rounded-full border overflow-hidden bg-gray-100/80 border-gray-200"
+                        >
+                          <Search className="w-3.5 h-3.5 flex-shrink-0 ml-3 text-gray-400" />
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="bg-transparent py-2 pr-3 text-[11px] font-body outline-none w-full min-w-0 text-foreground placeholder:text-muted-foreground"
+                          />
+                          {searchQuery && (
+                            <button onClick={() => { setSearchQuery(""); setShowSuggestions(false); }} className="pr-2 flex-shrink-0">
+                              <X className="w-3 h-3 text-gray-400" />
+                            </button>
+                          )}
+                        </motion.div>
+                      ) : (
+                        <motion.button
+                          key="closed"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setSearchOpen(true)}
+                          className="w-8 h-8 rounded-full flex items-center justify-center transition-colors text-gray-600 hover:text-primary hover:bg-primary/8"
+                        >
+                          <Search className="w-4 h-4" />
+                        </motion.button>
+                      )}
+                    </AnimatePresence>
+
+                    {showSuggestions && searchSuggestions.length > 0 && (
+                      <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                        {searchSuggestions.map((product) => (
+                          <button
+                            key={product.id}
+                            onClick={() => handleSuggestionClick(product.id)}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                          >
+                            <img src={product.image} alt={product.name} className="w-9 h-9 object-cover rounded-lg flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-foreground truncate">{product.name}</p>
+                              <p className="text-[10px] text-muted-foreground">{product.category} · ₹{product.price}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setIsOpen(true)}
+                    className="relative flex items-center gap-1.5 pl-3 pr-4 py-2 rounded-full transition-all duration-300 text-[11px] font-body font-semibold bg-primary text-white hover:bg-primary/90 shadow-sm"
+                  >
+                    <ShoppingBag className={cn("w-3.5 h-3.5", cartBounce && "animate-cart-bounce")} />
+                    <span>Bag</span>
+                    {getCartCount() > 0 && (
+                      <span className="w-4 h-4 bg-gold text-black text-[9px] font-bold flex items-center justify-center rounded-full ml-0.5">
+                        {getCartCount()}
+                      </span>
+                    )}
+                  </button>
+
+                  <div ref={profileRef} className="relative">
+                    <button
+                      onClick={() => setProfileOpen(!profileOpen)}
+                      className="flex items-center gap-0.5 w-8 h-8 rounded-full transition-colors justify-center text-gray-600 hover:text-primary hover:bg-primary/8"
+                    >
+                      <User className="w-4 h-4" />
+                      <ChevronDown className={cn("w-2.5 h-2.5 transition-transform duration-200", profileOpen && "rotate-180")} />
+                    </button>
+                    <AnimatePresence>
+                      {profileOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                          transition={{ duration: 0.14, ease: "easeOut" }}
+                          className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
+                        >
+                          {PROFILE_LINKS.map((item) => (
+                            <button
+                              key={item.name}
+                              onClick={() => handleNavigation(item.href)}
+                              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                            >
+                              <item.icon className="w-4 h-4 text-primary" />
+                              <span className="text-sm font-body font-medium text-foreground">{item.name}</span>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+
+              {/* MOBILE (inside pill) */}
+              <div className="md:hidden flex items-center h-12 gap-2">
                 <button
-                  key={link.name}
-                  onClick={() => handleNavigation(link.href)}
-                  className={cn(
-                    "text-left text-sm font-body font-medium transition-colors px-4 py-3 rounded-xl",
-                    scrolled ? "text-foreground hover:bg-primary/8 hover:text-primary" : "text-white/85 hover:bg-white/10 hover:text-white"
-                  )}
+                  className="p-1.5 transition-colors flex-shrink-0 text-foreground hover:text-primary"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 >
-                  {link.name}
+                  {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                 </button>
-              ))}
-              <div className={cn("my-1 h-px", scrolled ? "bg-gray-100" : "bg-white/12")} />
-              {PROFILE_LINKS.map((item) => (
+                <div className="flex-1 flex justify-center">
+                  <KasthuribaiLogo onClick={() => handleNavigation("/")} dark={true} />
+                </div>
                 <button
-                  key={item.name}
-                  onClick={() => handleNavigation(item.href)}
-                  className={cn(
-                    "flex items-center gap-3 text-sm font-body font-medium transition-colors px-4 py-3 rounded-xl",
-                    scrolled ? "text-foreground hover:bg-primary/8 hover:text-primary" : "text-white/85 hover:bg-white/10 hover:text-white"
-                  )}
+                  onClick={() => setSearchOpen(!searchOpen)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full transition-colors text-gray-600 hover:text-primary"
                 >
-                  <item.icon className="w-4 h-4" />
-                  {item.name}
+                  <Search className="w-4 h-4" />
                 </button>
-              ))}
+                <button
+                  onClick={() => setIsOpen(true)}
+                  className="relative w-8 h-8 flex items-center justify-center rounded-full transition-colors flex-shrink-0 text-gray-600 hover:text-primary"
+                >
+                  <ShoppingBag className={cn("w-4.5 h-4.5", cartBounce && "animate-cart-bounce")} />
+                  {getCartCount() > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-gold text-black text-[9px] font-bold flex items-center justify-center rounded-full">
+                      {getCartCount()}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {searchOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="md:hidden overflow-hidden"
+                  >
+                    <div className="flex items-center gap-2 rounded-full border mx-1 mb-2 overflow-hidden bg-gray-100 border-gray-200">
+                      <Search className="w-3.5 h-3.5 flex-shrink-0 ml-3 text-gray-400" />
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Search products..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="bg-transparent py-2.5 pr-3 text-[12px] font-body outline-none w-full text-foreground placeholder:text-muted-foreground"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
+
+            {/* Mobile dropdown */}
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="mx-1 mt-1 rounded-2xl shadow-2xl border border-white/50 overflow-hidden z-50 md:hidden bg-white/92 backdrop-blur-2xl"
+                >
+                  <div className="flex flex-col p-2">
+                    {NAV_LINKS.map((link) => (
+                      <button
+                        key={link.name}
+                        onClick={() => handleNavigation(link.href)}
+                        className="text-left text-sm font-body font-medium transition-colors px-4 py-3 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary"
+                      >
+                        {link.name}
+                      </button>
+                    ))}
+                    <div className="my-1 h-px bg-gray-100" />
+                    {PROFILE_LINKS.map((item) => (
+                      <button
+                        key={item.name}
+                        onClick={() => handleNavigation(item.href)}
+                        className="flex items-center gap-3 text-sm font-body font-medium transition-colors px-4 py-3 rounded-xl text-foreground hover:bg-primary/8 hover:text-primary"
+                      >
+                        <item.icon className="w-4 h-4" />
+                        {item.name}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

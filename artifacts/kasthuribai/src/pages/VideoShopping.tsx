@@ -1,571 +1,690 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Navbar } from "@/components/sections/Navbar";
 import { Footer } from "@/components/sections/Footer";
 import { CartDrawer } from "@/components/CartDrawer";
 import { CartToast } from "@/components/CartToast";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
-import { 
-  Video, 
-  Phone, 
-  PhoneOff, 
-  Users, 
-  Clock, 
-  Star, 
-  ShoppingBag, 
-  Sparkles,
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Video,
+  Star,
   CheckCircle2,
   ArrowRight,
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
-  Maximize,
   MessageCircle,
-  Heart,
-  Share2
+  Clock,
+  Calendar,
+  Phone,
+  User,
+  Sparkles,
+  ShoppingBag,
+  Eye,
+  Shirt,
+  Baby,
+  Users,
+  ChevronRight,
+  Info,
 } from "lucide-react";
 
-interface Worker {
-  id: number;
-  name: string;
-  role: string;
-  rating: number;
-  experience: string;
-  specialties: string[];
-  available: boolean;
-  image: string;
-}
+// ── Constants ────────────────────────────────────────────────────────────────
+// Set VITE_WHATSAPP_NUMBER in your .env (e.g. 919876543210) before deploying.
+const WHATSAPP_NUMBER = (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined)?.replace(/\D/g, "") || "919876543210";
 
-const workers: Worker[] = [
+const CONSULTANTS = [
   {
     id: 1,
-    name: "Priya Sharma",
-    role: "Senior Fashion Consultant",
+    name: "Priya Devi",
+    role: "Women's & Bridal Expert",
+    experience: "9 years",
     rating: 4.9,
-    experience: "8 years",
-    specialties: ["Women's Wear", "Festival Collection", "Bridal"],
+    reviews: 312,
+    specialties: ["Sarees", "Kurtis", "Bridal Wear", "Festival Outfits"],
+    languages: ["Tamil", "English"],
+    icon: Shirt,
+    color: "from-rose-400 to-pink-600",
     available: true,
-    image: "👩‍💼"
   },
   {
     id: 2,
-    name: "Rajesh Kumar",
-    role: "Men's Fashion Expert",
+    name: "Ramesh Kumar",
+    role: "Men's Fashion Consultant",
+    experience: "7 years",
     rating: 4.8,
-    experience: "6 years",
-    specialties: ["Men's Wear", "Formal", "Casual"],
+    reviews: 245,
+    specialties: ["Shirts", "Dhotis", "Formal Wear", "Traditional"],
+    languages: ["Tamil", "Telugu", "English"],
+    icon: Users,
+    color: "from-blue-400 to-blue-700",
     available: true,
-    image: "👨‍💼"
   },
   {
     id: 3,
-    name: "Anita Patel",
-    role: "Kids Collection Specialist",
-    rating: 4.9,
+    name: "Anbu Selvi",
+    role: "Kids Wear Specialist",
     experience: "5 years",
-    specialties: ["Kids Wear", "Party Wear", "School Uniforms"],
-    available: false,
-    image: "👩‍🦰"
+    rating: 4.9,
+    reviews: 189,
+    specialties: ["Kids Ethnic", "School Wear", "Party Outfits", "Uniforms"],
+    languages: ["Tamil", "English"],
+    icon: Baby,
+    color: "from-green-400 to-emerald-600",
+    available: true,
   },
   {
     id: 4,
-    name: "Vikram Singh",
-    role: "Style Advisor",
+    name: "Vijay Anand",
+    role: "Silver & Accessories Expert",
+    experience: "6 years",
     rating: 4.7,
-    experience: "4 years",
-    specialties: ["Trendy Outfits", "Accessories", "Color Matching"],
-    available: true,
-    image: "👨‍🦱"
-  }
+    reviews: 156,
+    specialties: ["Silver Jewellery", "Bangles", "Anklets", "Gifting"],
+    languages: ["Tamil", "English"],
+    icon: Eye,
+    color: "from-amber-400 to-yellow-600",
+    available: false,
+  },
 ];
 
-const features = [
-  {
-    icon: Video,
-    title: "Live Video Shopping",
-    description: "Connect face-to-face with our fashion experts through high-quality video calls"
-  },
-  {
-    icon: ShoppingBag,
-    title: "Real-time Product Showcase",
-    description: "See products in detail as our staff shows them to you live"
-  },
-  {
-    icon: MessageCircle,
-    title: "Instant Assistance",
-    description: "Get personalized recommendations and styling tips in real-time"
-  },
-  {
-    icon: Heart,
-    title: "Personalized Experience",
-    description: "Enjoy a shopping experience tailored to your preferences and style"
-  }
+const TIME_SLOTS = [
+  "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
+  "12:00 PM", "12:30 PM",
+  "02:00 PM", "02:30 PM", "03:00 PM", "03:30 PM",
+  "04:00 PM", "04:30 PM", "05:00 PM",
 ];
 
-const steps = [
+const HOW_IT_WORKS = [
   {
     step: 1,
-    title: "Choose an Expert",
-    description: "Browse our available fashion consultants and select one that matches your needs"
+    title: "Pick a Consultant",
+    desc: "Choose an expert based on what you want to shop — women's wear, men's, kids, or silver jewellery.",
+    icon: User,
   },
   {
     step: 2,
-    title: "Start Video Call",
-    description: "Click the call button to connect instantly with your chosen expert"
+    title: "Select Date & Time",
+    desc: "Choose a convenient slot. We're available Monday to Saturday, 10 AM – 5 PM.",
+    icon: Calendar,
   },
   {
     step: 3,
-    title: "Browse & Select",
-    description: "Explore products together and get real-time feedback and recommendations"
+    title: "Confirm on WhatsApp",
+    desc: "Your booking message is sent directly to our WhatsApp. We'll confirm within 30 minutes.",
+    icon: MessageCircle,
   },
   {
     step: 4,
-    title: "Complete Purchase",
-    description: "Add items to your cart and checkout seamlessly during or after the call"
-  }
+    title: "Video Call & Shop",
+    desc: "At the scheduled time, we call you on WhatsApp Video. Browse, ask questions, and order live.",
+    icon: Video,
+  },
 ];
 
+const BENEFITS = [
+  "See fabric texture, drape & colour on camera — no surprises",
+  "Ask us to hold up any item, zoom in, or show multiple options",
+  "Get honest styling advice from experienced consultants",
+  "Place your order during the call — no need to visit the store",
+  "WhatsApp Video — no app install required",
+  "Sessions in Tamil & English",
+];
+
+// ── Helper: get next 7 days ──────────────────────────────────────────────────
+function getNext7Days() {
+  const days = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const dayName = d.toLocaleDateString("en-IN", { weekday: "short" });
+    const dayNum = d.getDate();
+    const month = d.toLocaleDateString("en-IN", { month: "short" });
+    const isSunday = d.getDay() === 0;
+    days.push({ date: d, dayName, dayNum, month, isSunday, label: `${dayNum} ${month}` });
+  }
+  return days;
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 export default function VideoShopping() {
-  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
-  const [isCallActive, setIsCallActive] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOn, setIsVideoOn] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const [step, setStep] = useState<"select" | "book" | "confirmed">("select");
+  const [selectedConsultant, setSelectedConsultant] = useState<typeof CONSULTANTS[0] | null>(null);
+  const [selectedDay, setSelectedDay] = useState<ReturnType<typeof getNext7Days>[0] | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [interest, setInterest] = useState("");
+  const [formError, setFormError] = useState("");
 
-  useEffect(() => {
-    // Simulate page loading
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const days = getNext7Days();
 
-  const startCall = (worker: Worker) => {
-    setSelectedWorker(worker);
-    setIsCallActive(true);
-  };
+  function handleSelectConsultant(c: typeof CONSULTANTS[0]) {
+    if (!c.available) return;
+    setSelectedConsultant(c);
+    setStep("book");
+    setTimeout(() => document.getElementById("booking-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+  }
 
-  const endCall = () => {
-    setIsCallActive(false);
-    setSelectedWorker(null);
-  };
+  function handleBook(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError("");
+    if (!name.trim()) return setFormError("Please enter your name.");
+    if (!phone.trim() || !/^[6-9]\d{9}$/.test(phone.replace(/\s/g, "")))
+      return setFormError("Please enter a valid 10-digit Indian mobile number.");
+    if (!selectedDay) return setFormError("Please select a date.");
+    if (!selectedSlot) return setFormError("Please select a time slot.");
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Spinner size="lg" className="mx-auto mb-4" />
-          <p className="text-muted-foreground font-body">Loading Video Shopping...</p>
-        </div>
-      </div>
-    );
+    const dateStr = `${selectedDay.dayName}, ${selectedDay.label}`;
+    const msg = [
+      `🛍️ *Video Shopping Booking – Kasthuribai Ready Mades*`,
+      ``,
+      `👤 *Name:* ${name.trim()}`,
+      `📱 *My WhatsApp:* +91 ${phone.trim()}`,
+      `👗 *Consultant:* ${selectedConsultant!.name} (${selectedConsultant!.role})`,
+      `📅 *Date:* ${dateStr}`,
+      `⏰ *Time:* ${selectedSlot}`,
+      interest.trim() ? `🛒 *Looking for:* ${interest.trim()}` : "",
+      ``,
+      `Please confirm my video shopping session. Thank you! 🙏`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+    setStep("confirmed");
+  }
+
+  function handleReset() {
+    setStep("select");
+    setSelectedConsultant(null);
+    setSelectedDay(null);
+    setSelectedSlot(null);
+    setName("");
+    setPhone("");
+    setInterest("");
+    setFormError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
-    <div className="min-h-screen relative flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-[#fdfaf7]">
       <Navbar />
-      <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-primary/5 via-gold/5 to-primary/10 py-12 sm:py-16 md:py-20 overflow-hidden">
-          {/* Decorative elements */}
-          <div className="absolute top-0 left-0 w-72 h-72 bg-gold/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
-          
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="text-center max-w-3xl mx-auto">
-              <Badge className="mb-4 bg-gold/20 text-gold-foreground hover:bg-gold/30 border-gold/30">
-                <Sparkles className="w-3 h-3 mr-1" />
-                New Feature
-              </Badge>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-foreground mb-4 sm:mb-6">
-                Video Shopping
-                <span className="block text-gold mt-2">Experience</span>
-              </h1>
-              <p className="text-base sm:text-lg md:text-xl text-muted-foreground font-body mb-8 sm:mb-10 max-w-2xl mx-auto">
-                Connect with our fashion experts through live video calls. Get personalized styling advice, 
-                see products up close, and shop from the comfort of your home.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  size="lg" 
-                  className="bg-primary hover:bg-primary/90 text-white font-semibold px-8 py-6 text-base sm:text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-                  onClick={() => document.getElementById('experts')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  <Video className="w-5 h-5 mr-2" />
-                  Start Video Shopping
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5 font-semibold px-8 py-6 text-base sm:text-lg rounded-full transition-all duration-300"
-                  onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  Learn How It Works
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </div>
+
+      <main className="flex-1 pt-0">
+
+        {/* ── Hero ──────────────────────────────────────────────────────── */}
+        <section className="relative bg-gradient-to-br from-[#5c1a1a] via-[#7a2020] to-[#3d1010] overflow-hidden">
+          {/* decorative circles */}
+          <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/5 blur-2xl" />
+          <div className="absolute -bottom-10 -right-10 w-96 h-96 rounded-full bg-amber-400/10 blur-3xl" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-white/5" />
+
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 relative z-10 text-center">
+            <div className="inline-flex items-center gap-2 bg-amber-400/20 text-amber-300 border border-amber-400/30 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wider mb-6">
+              <Sparkles className="w-3.5 h-3.5" />
+              Live Video Shopping
             </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section className="py-12 sm:py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                Why Video Shopping?
-              </h2>
-              <p className="text-muted-foreground font-body max-w-2xl mx-auto">
-                Experience the future of shopping with our innovative video shopping feature
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {features.map((feature, index) => (
-                <Card key={index} className="group hover:shadow-lg transition-all duration-300 border-2 hover:border-gold/30 bg-gradient-to-br from-white to-secondary/30">
-                  <CardHeader className="pb-3">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-gold/20 transition-colors duration-300">
-                      <feature.icon className="w-6 h-6 text-primary group-hover:text-gold transition-colors duration-300" />
-                    </div>
-                    <CardTitle className="text-lg font-display font-semibold">{feature.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="font-body text-sm leading-relaxed">
-                      {feature.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* How It Works Section */}
-        <section id="how-it-works" className="py-12 sm:py-16 bg-gradient-to-b from-secondary/30 to-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                How It Works
-              </h2>
-              <p className="text-muted-foreground font-body max-w-2xl mx-auto">
-                Get started with video shopping in just 4 simple steps
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {steps.map((step, index) => (
-                <div key={index} className="relative">
-                  {index < steps.length - 1 && (
-                    <div className="hidden lg:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-gold/50 to-transparent z-0"></div>
-                  )}
-                  <Card className="relative z-10 text-center hover:shadow-lg transition-all duration-300 bg-white">
-                    <CardHeader className="pb-3">
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-gold flex items-center justify-center mx-auto mb-4 shadow-lg">
-                        <span className="text-2xl font-bold text-white">{step.step}</span>
-                      </div>
-                      <CardTitle className="text-lg font-display font-semibold">{step.title}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <CardDescription className="font-body text-sm leading-relaxed">
-                        {step.description}
-                      </CardDescription>
-                    </CardContent>
-                  </Card>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Video Call Interface (when active) */}
-        {isCallActive && selectedWorker && (
-          <section className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-            <div className="w-full max-w-6xl bg-gray-900 rounded-2xl overflow-hidden shadow-2xl">
-              {/* Video Header */}
-              <div className="bg-gray-800 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-gold flex items-center justify-center text-2xl">
-                    {selectedWorker.image}
-                  </div>
-                  <div>
-                    <h3 className="text-white font-semibold text-lg">{selectedWorker.name}</h3>
-                    <p className="text-gray-400 text-sm">{selectedWorker.role}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                    Live
-                  </Badge>
-                  <span className="text-gray-400 text-sm">00:00</span>
-                </div>
-              </div>
-
-              {/* Video Area */}
-              <div className="relative aspect-video bg-gray-800">
-                {/* Main Video (Expert) */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/30 to-gold/30 flex items-center justify-center text-6xl mb-4 mx-auto">
-                      {selectedWorker.image}
-                    </div>
-                    <p className="text-white text-lg font-semibold">{selectedWorker.name}</p>
-                    <p className="text-gray-400">Connecting...</p>
-                  </div>
-                </div>
-
-                {/* Self View (Small) */}
-                <div className="absolute bottom-4 right-4 w-48 h-36 bg-gray-700 rounded-xl overflow-hidden shadow-lg border-2 border-gray-600">
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
-                    <div className="text-center">
-                      <div className="w-16 h-16 rounded-full bg-gray-600 flex items-center justify-center mx-auto mb-2">
-                        <Video className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <p className="text-gray-400 text-sm">Your Camera</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Product Showcase Area */}
-                <div className="absolute top-4 left-4 bg-white/10 backdrop-blur-sm rounded-xl p-4 max-w-xs">
-                  <h4 className="text-white font-semibold mb-2 flex items-center gap-2">
-                    <ShoppingBag className="w-4 h-4" />
-                    Currently Viewing
-                  </h4>
-                  <div className="bg-white/20 rounded-lg p-3">
-                    <p className="text-white text-sm">Silk Saree Collection</p>
-                    <p className="text-gray-300 text-xs">Premium Quality</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Video Controls */}
-              <div className="bg-gray-800 px-6 py-4">
-                <div className="flex items-center justify-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className={`rounded-full w-14 h-14 p-0 ${isMuted ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'}`}
-                    onClick={() => setIsMuted(!isMuted)}
-                  >
-                    {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className={`rounded-full w-14 h-14 p-0 ${!isVideoOn ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600'}`}
-                    onClick={() => setIsVideoOn(!isVideoOn)}
-                  >
-                    {isVideoOn ? <Play className="w-6 h-6" /> : <Pause className="w-6 h-6" />}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full w-14 h-14 p-0 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                  >
-                    <Maximize className="w-6 h-6" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full w-14 h-14 p-0 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                  >
-                    <MessageCircle className="w-6 h-6" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="rounded-full w-14 h-14 p-0 bg-gray-700 border-gray-600 text-white hover:bg-gray-600"
-                  >
-                    <Share2 className="w-6 h-6" />
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="rounded-full px-8 bg-red-500 hover:bg-red-600 text-white"
-                    onClick={endCall}
-                  >
-                    <PhoneOff className="w-5 h-5 mr-2" />
-                    End Call
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Available Experts Section */}
-        <section id="experts" className="py-12 sm:py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                Our Fashion Experts
-              </h2>
-              <p className="text-muted-foreground font-body max-w-2xl mx-auto">
-                Connect with our experienced fashion consultants for personalized shopping assistance
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {workers.map((worker) => (
-                <Card 
-                  key={worker.id} 
-                  className={`group hover:shadow-xl transition-all duration-300 overflow-hidden ${!worker.available ? 'opacity-60' : ''}`}
-                >
-                  <div className="relative">
-                    <div className="h-48 bg-gradient-to-br from-primary/20 to-gold/20 flex items-center justify-center">
-                      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-gold flex items-center justify-center text-5xl shadow-lg">
-                        {worker.image}
-                      </div>
-                    </div>
-                    {worker.available ? (
-                      <Badge className="absolute top-3 right-3 bg-green-500/90 text-white border-0">
-                        <span className="w-2 h-2 bg-white rounded-full mr-1.5 animate-pulse"></span>
-                        Available
-                      </Badge>
-                    ) : (
-                      <Badge className="absolute top-3 right-3 bg-gray-500/90 text-white border-0">
-                        <Clock className="w-3 h-3 mr-1.5" />
-                        Busy
-                      </Badge>
-                    )}
-                  </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-display font-semibold">{worker.name}</CardTitle>
-                    <CardDescription className="font-body text-sm">{worker.role}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-1 text-gold">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span className="font-semibold">{worker.rating}</span>
-                      </div>
-                      <span className="text-muted-foreground">{worker.experience} exp.</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {worker.specialties.map((specialty, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs font-body">
-                          {specialty}
-                        </Badge>
-                      ))}
-                    </div>
-                    <Button 
-                      className={`w-full rounded-full font-semibold transition-all duration-300 ${
-                        worker.available 
-                          ? 'bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-lg' 
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                      disabled={!worker.available}
-                      onClick={() => worker.available && startCall(worker)}
-                    >
-                      {worker.available ? (
-                        <>
-                          <Phone className="w-4 h-4 mr-2" />
-                          Start Video Call
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="w-4 h-4 mr-2" />
-                          Currently Busy
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-12 sm:py-16 bg-gradient-to-r from-primary to-gold">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white mb-4">
-              Ready to Experience Video Shopping?
-            </h2>
-            <p className="text-white/90 font-body text-lg mb-8 max-w-2xl mx-auto">
-              Connect with our fashion experts now and discover the perfect outfits for any occasion. 
-              Get personalized styling advice from the comfort of your home.
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-white mb-6 leading-tight">
+              Shop Live with Our
+              <span className="block text-amber-400 mt-1">Fashion Experts</span>
+            </h1>
+            <p className="text-white/75 text-lg sm:text-xl font-body max-w-2xl mx-auto mb-10 leading-relaxed">
+              Book a free WhatsApp video call. Our consultants will show you products live,
+              answer your questions, and help you shop — all from your home.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button 
-                size="lg" 
-                className="bg-white text-primary hover:bg-white/90 font-semibold px-8 py-6 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-                onClick={() => document.getElementById('experts')?.scrollIntoView({ behavior: 'smooth' })}
+              <button
+                onClick={() => document.getElementById("consultants")?.scrollIntoView({ behavior: "smooth" })}
+                className="inline-flex items-center gap-2 bg-amber-400 hover:bg-amber-300 text-[#3d1010] font-bold px-8 py-4 rounded-full shadow-xl shadow-amber-400/20 transition-all duration-300 text-base"
               >
-                <Video className="w-5 h-5 mr-2" />
-                Start Shopping Now
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="border-2 border-white text-white hover:bg-white/10 font-semibold px-8 py-6 text-lg rounded-full transition-all duration-300"
+                <Video className="w-5 h-5" />
+                Book a Free Session
+              </button>
+              <button
+                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+                className="inline-flex items-center gap-2 border-2 border-white/25 text-white hover:bg-white/10 font-semibold px-8 py-4 rounded-full transition-all duration-300 text-base"
               >
-                <MessageCircle className="w-5 h-5 mr-2" />
-                Contact Us
-              </Button>
+                How It Works
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* trust badges */}
+            <div className="flex flex-wrap justify-center gap-6 mt-12">
+              {[
+                { icon: "📞", text: "WhatsApp Video — no app needed" },
+                { icon: "🆓", text: "100% Free consultation" },
+                { icon: "🕐", text: "Response in 30 minutes" },
+              ].map((b) => (
+                <div key={b.text} className="flex items-center gap-2 text-white/65 text-sm font-body">
+                  <span>{b.icon}</span>
+                  <span>{b.text}</span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Benefits Section */}
-        <section className="py-12 sm:py-16 bg-secondary/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* ── How It Works ──────────────────────────────────────────────── */}
+        <section id="how-it-works" className="py-16 sm:py-20 bg-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-3">How It Works</h2>
+              <p className="text-muted-foreground font-body text-base max-w-xl mx-auto">
+                Four simple steps between you and a live shopping session
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {HOW_IT_WORKS.map((item, idx) => (
+                <motion.div
+                  key={item.step}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="relative text-center p-6 rounded-2xl bg-[#fdfaf7] border border-gray-100"
+                >
+                  {idx < HOW_IT_WORKS.length - 1 && (
+                    <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-300 z-10" />
+                  )}
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-[#7a2020] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
+                    <item.icon className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-amber-500 mb-1">Step {item.step}</div>
+                  <h3 className="font-display font-bold text-foreground text-lg mb-2">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground font-body leading-relaxed">{item.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Consultants ───────────────────────────────────────────────── */}
+        <section id="consultants" className="py-16 sm:py-20 bg-[#fdfaf7]">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-display font-bold text-foreground mb-3">Our Consultants</h2>
+              <p className="text-muted-foreground font-body text-base max-w-xl mx-auto">
+                Choose the expert who matches what you're looking for
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {CONSULTANTS.map((c, idx) => (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.08 }}
+                  className={`relative rounded-2xl bg-white border-2 overflow-hidden transition-all duration-300 ${
+                    !c.available
+                      ? "opacity-55 border-gray-100"
+                      : selectedConsultant?.id === c.id
+                      ? "border-primary shadow-xl shadow-primary/10"
+                      : "border-gray-100 hover:border-primary/40 hover:shadow-lg cursor-pointer"
+                  }`}
+                  role={c.available ? "button" : undefined}
+                  tabIndex={c.available ? 0 : undefined}
+                  aria-label={c.available ? `Book session with ${c.name}` : `${c.name} is currently unavailable`}
+                  aria-pressed={selectedConsultant?.id === c.id}
+                  onClick={() => handleSelectConsultant(c)}
+                  onKeyDown={(e) => { if (c.available && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleSelectConsultant(c); } }}
+                >
+                  {/* colour header */}
+                  <div className={`h-28 bg-gradient-to-br ${c.color} flex items-center justify-center`}>
+                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <c.icon className="w-9 h-9 text-white" />
+                    </div>
+                  </div>
+
+                  {/* availability badge */}
+                  <div className={`absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${
+                    c.available ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                  }`}>
+                    {c.available ? (
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                        Available
+                      </span>
+                    ) : "Busy"}
+                  </div>
+
+                  <div className="p-5">
+                    <h3 className="font-display font-bold text-foreground text-base mb-0.5">{c.name}</h3>
+                    <p className="text-xs text-muted-foreground font-body mb-3">{c.role}</p>
+
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-1 text-amber-500">
+                        <Star className="w-3.5 h-3.5 fill-current" />
+                        <span className="text-sm font-bold text-foreground">{c.rating}</span>
+                        <span className="text-xs text-muted-foreground">({c.reviews})</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                        <Clock className="w-3 h-3" />
+                        {c.experience}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {c.specialties.map((s) => (
+                        <span key={s} className="text-[10px] bg-gray-50 border border-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="text-[10px] text-muted-foreground mb-4 flex items-center gap-1">
+                      <MessageCircle className="w-3 h-3" />
+                      {c.languages.join(" · ")}
+                    </div>
+
+                    <button
+                      disabled={!c.available}
+                      onClick={(e) => { e.stopPropagation(); handleSelectConsultant(c); }}
+                      className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                        c.available
+                          ? "bg-primary hover:bg-primary/90 text-white shadow-md hover:shadow-primary/25"
+                          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
+                    >
+                      {c.available ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Video className="w-4 h-4" /> Book Session
+                        </span>
+                      ) : (
+                        <span className="flex items-center justify-center gap-2">
+                          <Clock className="w-4 h-4" /> Unavailable
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── Booking Form ──────────────────────────────────────────────── */}
+        <AnimatePresence>
+          {step === "book" && selectedConsultant && (
+            <motion.section
+              id="booking-form"
+              key="booking-form"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+              transition={{ duration: 0.35 }}
+              className="py-16 sm:py-20 bg-white border-t border-gray-100"
+            >
+              <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+                {/* selected consultant summary */}
+                <div className="flex items-center gap-4 mb-8 p-4 rounded-2xl bg-primary/5 border border-primary/15">
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${selectedConsultant.color} flex items-center justify-center flex-shrink-0`}>
+                    <selectedConsultant.icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground font-body">You picked</p>
+                    <p className="font-display font-bold text-foreground">{selectedConsultant.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedConsultant.role}</p>
+                  </div>
+                  <button
+                    onClick={() => { setStep("select"); setSelectedConsultant(null); }}
+                    className="text-xs text-primary font-semibold hover:underline flex-shrink-0"
+                  >
+                    Change
+                  </button>
+                </div>
+
+                <h2 className="text-2xl sm:text-3xl font-display font-bold text-foreground mb-2">
+                  Book Your Session
+                </h2>
+                <p className="text-muted-foreground font-body mb-8 text-sm">
+                  Fill in the details below. Clicking "Confirm Booking" will open WhatsApp with your booking message pre-filled — just hit send!
+                </p>
+
+                <form onSubmit={handleBook} className="space-y-6">
+                  {/* Name & Phone */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-foreground mb-1.5">Your Name *</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="e.g. Kavitha"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none text-sm font-body bg-white transition"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-foreground mb-1.5">WhatsApp Number *</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          type="tel"
+                          placeholder="10-digit mobile"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                          className="w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none text-sm font-body bg-white transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <label className="block text-sm font-semibold text-foreground mb-2">
+                      Select Date * <span className="text-muted-foreground font-normal">(Mon – Sat)</span>
+                    </label>
+                    <div className="flex gap-2 flex-wrap">
+                      {days.map((d) => (
+                        <button
+                          key={d.label}
+                          type="button"
+                          disabled={d.isSunday}
+                          onClick={() => { setSelectedDay(d); setSelectedSlot(null); }}
+                          className={`flex flex-col items-center px-3 py-2 rounded-xl border-2 text-sm font-body transition-all min-w-[60px] ${
+                            d.isSunday
+                              ? "opacity-30 cursor-not-allowed border-gray-100 bg-gray-50"
+                              : selectedDay?.label === d.label
+                              ? "border-primary bg-primary text-white shadow-md"
+                              : "border-gray-200 hover:border-primary/40 bg-white"
+                          }`}
+                        >
+                          <span className="text-[10px] uppercase tracking-wider font-semibold opacity-75">{d.dayName}</span>
+                          <span className="font-bold text-base">{d.dayNum}</span>
+                          <span className="text-[10px] opacity-70">{d.month}</span>
+                          {d.isSunday && <span className="text-[9px] text-red-400 font-medium">Closed</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Time Slot */}
+                  {selectedDay && !selectedDay.isSunday && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <label className="block text-sm font-semibold text-foreground mb-2">Select Time *</label>
+                      <div className="flex flex-wrap gap-2">
+                        {TIME_SLOTS.map((slot) => (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`px-3 py-2 rounded-lg border text-sm font-body transition-all ${
+                              selectedSlot === slot
+                                ? "border-primary bg-primary text-white shadow-sm"
+                                : "border-gray-200 hover:border-primary/40 bg-white text-foreground"
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Interest */}
+                  <div>
+                    <label className="block text-sm font-semibold text-foreground mb-1.5">
+                      What are you looking for? <span className="text-muted-foreground font-normal">(optional)</span>
+                    </label>
+                    <div className="relative">
+                      <ShoppingBag className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+                      <textarea
+                        placeholder="e.g. Silk sarees for a wedding, boys party wear aged 5–8, silver bangles as gift..."
+                        value={interest}
+                        onChange={(e) => setInterest(e.target.value)}
+                        rows={2}
+                        className="w-full pl-9 pr-4 py-3 rounded-xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/15 outline-none text-sm font-body bg-white transition resize-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Info box */}
+                  <div className="flex items-start gap-3 p-4 rounded-xl bg-green-50 border border-green-100">
+                    <Info className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-green-800 font-body leading-relaxed">
+                      Clicking <strong>"Confirm Booking"</strong> will open WhatsApp with your booking details pre-filled. Just hit <strong>Send</strong> — we'll confirm your slot within 30 minutes and call you on WhatsApp Video at the booked time.
+                    </p>
+                  </div>
+
+                  {/* Error */}
+                  {formError && (
+                    <p className="text-sm text-red-500 font-body bg-red-50 border border-red-100 px-4 py-3 rounded-xl">
+                      {formError}
+                    </p>
+                  )}
+
+                  {/* Submit */}
+                  <button
+                    type="submit"
+                    className="w-full flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#1ebe5a] text-white font-bold py-4 rounded-xl text-base shadow-lg shadow-green-500/20 transition-all duration-300"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white flex-shrink-0">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    Confirm Booking on WhatsApp
+                  </button>
+                </form>
+              </div>
+            </motion.section>
+          )}
+
+          {/* ── Confirmed ─────────────────────────────────────────────── */}
+          {step === "confirmed" && (
+            <motion.section
+              key="confirmed"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
+              className="py-24 bg-white border-t border-gray-100"
+            >
+              <div className="max-w-lg mx-auto px-4 text-center">
+                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle2 className="w-10 h-10 text-green-600" />
+                </div>
+                <h2 className="text-3xl font-display font-bold text-foreground mb-3">
+                  Booking Sent!
+                </h2>
+                <p className="text-muted-foreground font-body text-base mb-2">
+                  Your booking message has been sent to our WhatsApp. We'll confirm your slot within 30 minutes.
+                </p>
+                <p className="text-sm text-muted-foreground font-body mb-8">
+                  At the scheduled time, <strong>{selectedConsultant?.name}</strong> will call you on WhatsApp Video at <strong>+91 {phone}</strong>.
+                </p>
+
+                <div className="bg-[#fdfaf7] rounded-2xl border border-gray-100 p-5 text-left mb-8 space-y-3">
+                  {[
+                    ["Consultant", selectedConsultant?.name],
+                    ["Date", selectedDay ? `${selectedDay.dayName}, ${selectedDay.label}` : ""],
+                    ["Time", selectedSlot],
+                    ["Your Number", `+91 ${phone}`],
+                  ].map(([label, value]) => value && (
+                    <div key={label} className="flex items-center justify-between text-sm font-body">
+                      <span className="text-muted-foreground">{label}</span>
+                      <span className="font-semibold text-foreground">{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleReset}
+                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 font-semibold text-sm transition-colors"
+                >
+                  Book another session
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.section>
+          )}
+        </AnimatePresence>
+
+        {/* ── Benefits ──────────────────────────────────────────────────── */}
+        <section className="py-16 sm:py-20 bg-gradient-to-br from-[#5c1a1a] via-[#7a2020] to-[#4a1010]">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
-                <Badge className="mb-4 bg-primary/20 text-primary hover:bg-primary/30 border-primary/30">
-                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                  Benefits
-                </Badge>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
-                  Shop Smarter with Video Shopping
+                <h2 className="text-3xl sm:text-4xl font-display font-bold text-white mb-4">
+                  Why shop this way?
                 </h2>
-                <ul className="space-y-4">
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-foreground">See Products in Detail</h4>
-                      <p className="text-muted-foreground text-sm">Get a close-up view of fabrics, colors, and craftsmanship before buying</p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-foreground">Expert Styling Advice</h4>
-                      <p className="text-muted-foreground text-sm">Get personalized recommendations based on your preferences and occasion</p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-foreground">Save Time</h4>
-                      <p className="text-muted-foreground text-sm">Shop from home without the hassle of visiting multiple stores</p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-foreground">Instant Answers</h4>
-                      <p className="text-muted-foreground text-sm">Get all your questions answered in real-time by our fashion experts</p>
-                    </div>
-                  </li>
+                <p className="text-white/65 font-body mb-8 leading-relaxed">
+                  Our video shopping sessions bring the in-store experience to your home — with knowledgeable staff, real products, and honest advice.
+                </p>
+                <ul className="space-y-3.5">
+                  {BENEFITS.map((b) => (
+                    <li key={b} className="flex items-start gap-3 text-white/85 text-sm font-body">
+                      <CheckCircle2 className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                      {b}
+                    </li>
+                  ))}
                 </ul>
               </div>
-              <div className="relative">
-                <div className="aspect-square bg-gradient-to-br from-primary/20 to-gold/20 rounded-3xl flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-gold flex items-center justify-center mx-auto mb-6 shadow-xl">
-                      <Video className="w-16 h-16 text-white" />
+
+              <div className="bg-white/8 backdrop-blur-sm rounded-3xl p-8 border border-white/12">
+                <p className="text-amber-400 text-xs uppercase tracking-widest font-bold mb-4">Session details</p>
+                <div className="space-y-4">
+                  {[
+                    { icon: Clock, label: "Duration", value: "15 – 30 minutes" },
+                    { icon: MessageCircle, label: "Platform", value: "WhatsApp Video Call" },
+                    { icon: Calendar, label: "Available", value: "Mon – Sat, 10 AM to 5 PM" },
+                    { icon: Star, label: "Cost", value: "Completely Free" },
+                    { icon: Phone, label: "Languages", value: "Tamil & English" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center gap-4">
+                      <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                        <item.icon className="w-4.5 h-4.5 text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-white/50 text-xs font-body">{item.label}</p>
+                        <p className="text-white font-semibold text-sm">{item.value}</p>
+                      </div>
                     </div>
-                    <h3 className="text-2xl font-display font-bold text-foreground mb-2">Start Your Journey</h3>
-                    <p className="text-muted-foreground">Connect with experts today</p>
-                  </div>
+                  ))}
                 </div>
+                <button
+                  onClick={() => {
+                    setStep("select");
+                    document.getElementById("consultants")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="mt-8 w-full inline-flex items-center justify-center gap-2 bg-amber-400 hover:bg-amber-300 text-[#3d1010] font-bold py-3.5 rounded-xl transition-all duration-300 text-sm shadow-lg"
+                >
+                  <Video className="w-4 h-4" />
+                  Book a Free Session Now
+                </button>
               </div>
             </div>
           </div>
         </section>
+
       </main>
+
       <Footer />
       <CartDrawer />
       <CartToast />

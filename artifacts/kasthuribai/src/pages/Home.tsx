@@ -67,7 +67,7 @@ export default function Home() {
       <LoadingScreen onExitComplete={handleLoadingDone} />
       {showContent && (
       <div className="min-h-screen relative flex flex-col bg-background">
-      <Navbar />
+      <Navbar isHome />
       <main className="flex-1">
         <Hero />
         <FeatureStrip />
