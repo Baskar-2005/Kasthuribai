@@ -512,4 +512,13 @@ export const useOrders = create<OrdersStore>()(
   ),
 );
 
+// ── Cross-tab sync: when another tab writes orders to localStorage, re-hydrate ──
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'kasthuribai-orders-v2') {
+      useOrders.persist.rehydrate();
+    }
+  });
+}
+
 export { };

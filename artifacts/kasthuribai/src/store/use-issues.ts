@@ -93,3 +93,12 @@ export const useIssues = create<IssuesStore>()(
     { name: 'kasthuribai-issues-v1' },
   ),
 );
+
+// ── Cross-tab sync: when another tab writes issues to localStorage, re-hydrate ──
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'kasthuribai-issues-v1') {
+      useIssues.persist.rehydrate();
+    }
+  });
+}
