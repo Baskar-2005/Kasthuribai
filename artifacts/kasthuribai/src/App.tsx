@@ -9,6 +9,7 @@ import VideoShopping from "@/pages/VideoShopping";
 import MyOrders from "@/pages/MyOrders";
 import OrderTracking from "@/pages/OrderTracking";
 import SilverCorner from "@/pages/SilverCorner";
+import AdminDashboard from "@/pages/AdminDashboard";
 import NotFound from "@/pages/not-found";
 import { WelcomeAudio } from "@/components/WelcomeAudio";
 
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/my-orders" component={MyOrders} />
 
       <Route path="/order-tracking/:orderId" component={OrderTracking} />
+      <Route path="/admin" component={AdminDashboard} />
 
       <Route component={NotFound} />
     </Switch>

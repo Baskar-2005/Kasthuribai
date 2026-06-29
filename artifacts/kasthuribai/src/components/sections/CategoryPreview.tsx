@@ -23,59 +23,65 @@ export function CategoryPreview({
   emoji,
   gradientFrom,
   gradientTo,
-  limit = 6,
+  limit = 8,
   onViewProduct,
 }: CategoryPreviewProps) {
   const previewProducts = useMemo(() => {
     return PRODUCTS.filter((p) => p.category === category).slice(0, limit);
   }, [category, limit]);
 
-  if (previewProducts.length === 0) {
-    return null;
-  }
+  if (previewProducts.length === 0) return null;
 
   return (
-    <section className={`py-12 sm:py-16 md:py-24 bg-gradient-to-b ${gradientFrom} ${gradientTo}`}>
+    <section className={`py-10 sm:py-14 md:py-16 bg-gradient-to-b ${gradientFrom} ${gradientTo}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8 sm:mb-10">
-          <span className="text-primary font-body font-semibold text-xs sm:text-sm uppercase tracking-wider">
-            {emoji} {title}
-          </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold mt-1 mb-2 sm:mb-3">
-            {title}
-          </h2>
-          <div className="w-16 sm:w-20 h-1 bg-gold rounded-full mx-auto"></div>
-          <p className="text-sm sm:text-base text-muted-foreground font-body mt-4 max-w-2xl mx-auto">
-            {subtitle}
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-3">
+          <div>
+            <span className="text-primary font-body font-semibold text-xs uppercase tracking-wider">
+              {emoji} {title}
+            </span>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-display font-bold mt-0.5 mb-2">
+              {title}
+            </h2>
+            <div className="w-14 h-0.5 bg-gold rounded-full"></div>
+            <p className="text-xs sm:text-sm text-muted-foreground font-body mt-2 max-w-xl">
+              {subtitle}
+            </p>
+          </div>
+          <Link
+            href={`/collections?category=${category}`}
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-body font-semibold text-primary hover:underline flex-shrink-0"
+          >
+            View All <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* Products Grid */}
+        {/* Products Grid — compact, more columns */}
         <motion.div
           layout
-          className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6"
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-2.5 sm:gap-3"
         >
           {previewProducts.map((product, index) => (
             <motion.div
               key={product.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
+              transition={{ duration: 0.3, delay: index * 0.06 }}
             >
-              <ProductCard product={product} onView={onViewProduct} />
+              <ProductCard product={product} onView={onViewProduct} compact />
             </motion.div>
           ))}
         </motion.div>
 
-        {/* Show More Button */}
-        <div className="mt-8 sm:mt-10 text-center">
+        {/* Show More */}
+        <div className="mt-6 sm:mt-8 text-center">
           <Link
             href={`/collections?category=${category}`}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-body font-semibold rounded-full hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary text-white font-body font-semibold rounded-full hover:bg-primary/90 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 text-sm"
           >
             Show More {title}
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
       </div>
