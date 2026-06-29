@@ -4,7 +4,7 @@ import {
   Package, Truck, CheckCircle, XCircle, Clock, ChevronDown,
   Search, ArrowLeft, Download, RotateCcw, AlertCircle, ShoppingBag,
   MapPin, Phone, RefreshCcw, FileText, SortAsc, MessageSquare,
-  ArrowRight, Banknote, Calendar, Banknote as Refund,
+  ArrowRight, Banknote, Calendar, Bell,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useOrders, OrderStatus, Order } from "@/store/use-orders";
@@ -333,8 +333,8 @@ function OrderCard({ order, index }: { order: Order; index: number }) {
             ))}
           </div>
 
-          {/* Admin reply banner */}
-          <AdminReplyBanner orderId={order.id} />
+          {/* Admin reply notification */}
+          <AdminReplyNotification orderId={order.id} />
 
           {/* Actions */}
           <div className="mt-3 flex flex-wrap gap-2">
@@ -461,18 +461,74 @@ function OrderCard({ order, index }: { order: Order; index: number }) {
   );
 }
 
-// ─── Admin Reply Banner (shows if admin has replied to an issue for this order) ──
-function AdminReplyBanner({ orderId }: { orderId: string }) {
-  const { issues } = useIssues();
-  const replied = issues.find(i => i.orderId === orderId && i.adminReply && i.status === "resolved");
-  if (!replied) return null;
+// ─── Admin Reply Notification (prominent banner when admin replied and customer hasn't seen it) ──
+function AdminReplyNotification({ orderId }: { orderId: string }) {
+  const { issues, markCustomerRead } = useIssues();
+
+  const unread = issues.filter(
+    i => i.orderId === orderId && i.adminReply && !i.customerRead
+  );
+  const allReplied = issues.filter(
+    i => i.orderId === orderId && i.adminReply
+  );
+
+  if (unread.length === 0 && allReplied.length === 0) return null;
+
+  if (unread.length > 0) {
+    return (
+      <motion.div
+        className="mt-3 rounded-2xl overflow-hidden"
+        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 24 }}>
+        {/* Pulsing attention header */}
+        <div className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2">
+          <motion.div
+            animate={{ scale: [1, 1.25, 1] }}
+            transition={{ repeat: Infinity, duration: 1.6 }}>
+            <Bell className="w-4 h-4 text-white" />
+          </motion.div>
+          <span className="text-white text-xs font-bold tracking-wide uppercase">
+            New reply from Support Team
+          </span>
+          <span className="ml-auto text-white/70 text-[10px]">Tap to dismiss</span>
+        </div>
+        {/* Reply message(s) */}
+        <div className="bg-amber-50 border border-amber-200 border-t-0 rounded-b-2xl divide-y divide-amber-100">
+          {unread.map(issue => (
+            <div key={issue.id} className="px-4 py-3">
+              <p className="text-[11px] font-semibold text-amber-600 mb-1">
+                Re: {issue.issueType}
+              </p>
+              <p className="text-sm text-gray-800 leading-relaxed">{issue.adminReply}</p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-[10px] text-gray-400">
+                  {new Date(issue.updatedAt).toLocaleString("en-IN", {
+                    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+                  })}
+                </p>
+                <button
+                  onClick={() => markCustomerRead(issue.id)}
+                  className="text-[11px] font-semibold text-amber-700 hover:text-amber-900 flex items-center gap-1 transition-colors">
+                  <CheckCircle className="w-3 h-3" /> Mark as read
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Already read — show compact green banner
   return (
-    <motion.div className="mt-2 flex items-start gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2"
-      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
-      <CheckCircle className="w-3.5 h-3.5 text-green-600 mt-0.5 flex-shrink-0" />
+    <motion.div
+      className="mt-2 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <CheckCircle className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
       <div className="text-xs">
-        <span className="font-semibold text-green-800">Admin replied to your issue: </span>
-        <span className="text-green-700">{replied.adminReply}</span>
+        <span className="font-semibold text-green-800">Support replied: </span>
+        <span className="text-green-700 line-clamp-1">{allReplied[0].adminReply}</span>
       </div>
     </motion.div>
   );

@@ -15,6 +15,7 @@ export interface Issue {
   status: IssueStatus;
   adminReply?: string;
   read: boolean;
+  customerRead: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,9 +33,11 @@ interface IssuesStore {
   }) => void;
   markRead: (issueId: string) => void;
   markAllRead: () => void;
+  markCustomerRead: (issueId: string) => void;
   updateIssueStatus: (issueId: string, status: IssueStatus) => void;
   replyToIssue: (issueId: string, reply: string, status?: IssueStatus) => void;
   getUnreadCount: () => number;
+  getUnreadRepliesForOrder: (orderId: string) => Issue[];
 }
 
 export const useIssues = create<IssuesStore>()(
@@ -48,6 +51,7 @@ export const useIssues = create<IssuesStore>()(
           ...input,
           status: 'open',
           read: false,
+          customerRead: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -68,6 +72,14 @@ export const useIssues = create<IssuesStore>()(
         }));
       },
 
+      markCustomerRead: (issueId) => {
+        set((state) => ({
+          issues: state.issues.map((i) =>
+            i.id === issueId ? { ...i, customerRead: true } : i
+          ),
+        }));
+      },
+
       updateIssueStatus: (issueId, status) => {
         set((state) => ({
           issues: state.issues.map((i) =>
@@ -82,13 +94,18 @@ export const useIssues = create<IssuesStore>()(
         set((state) => ({
           issues: state.issues.map((i) =>
             i.id === issueId
-              ? { ...i, adminReply: reply, status, read: true, updatedAt: new Date().toISOString() }
+              ? { ...i, adminReply: reply, status, read: true, customerRead: false, updatedAt: new Date().toISOString() }
               : i
           ),
         }));
       },
 
       getUnreadCount: () => get().issues.filter((i) => !i.read).length,
+
+      getUnreadRepliesForOrder: (orderId) =>
+        get().issues.filter(
+          (i) => i.orderId === orderId && i.adminReply && !i.customerRead
+        ),
     }),
     { name: 'kasthuribai-issues-v1' },
   ),

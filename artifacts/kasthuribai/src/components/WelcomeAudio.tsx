@@ -6,35 +6,33 @@ export function WelcomeAudio() {
 
   useEffect(() => {
     // Create audio element
-    const audio = new Audio("/owner1.mp3");
-    audio.volume = 1; // Set volume to 100%
-    audioRef.current = audio;
+    // const audio = new Audio("/owner1.mp3");
+    // audio.volume = 1; // Set volume to 100%
+    // audioRef.current = audio;
 
-    // Try to play audio automatically
-    const playAudio = async () => {
-      try {
-        await audio.play();
-        // If autoplay succeeds, hide button
-        setShowButton(false);
-      } catch (error) {
-        console.log("Audio autoplay prevented by browser:", error);
-        // Show button for manual play
-        setShowButton(true);
-      }
-    };
+    // // Try to play audio automatically
+    // const playAudio = async () => {
+    //   try {
+    //     await audio.play();
+    //     setShowButton(false);
+    //   } catch (error) {
+    //     console.log("Audio autoplay prevented by browser:", error);
+    //     setShowButton(true);
+    //   }
+    // };
 
-    // Small delay to ensure page is loaded
-    const timer = setTimeout(() => {
-      playAudio();
-    }, 1000);
+    // // Small delay to ensure page is loaded
+    // const timer = setTimeout(() => {
+    //   playAudio();
+    // }, 1000);
 
-    return () => {
-      clearTimeout(timer);
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
+    // return () => {
+    //   clearTimeout(timer);
+    //   if (audioRef.current) {
+    //     audioRef.current.pause();
+    //     audioRef.current = null;
+    //   }
+    // };
   }, []);
 
   const handlePlay = async () => {
