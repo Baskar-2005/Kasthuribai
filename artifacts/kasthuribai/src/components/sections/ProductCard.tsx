@@ -16,8 +16,19 @@ const BADGE_STYLES: Record<string, string> = {
   "Sale":        "bg-rose-500 text-white",
   "Premium":     "bg-gray-800 text-white",
   "Hot":         "bg-orange-500 text-white",
-  "New Arrival": "bg-blue-500 text-white",
+  "New Arrival": "bg-emerald-500 text-white",
 };
+
+const BADGE_LABELS: Record<string, string> = {
+  "New Arrival": "NEW",
+  "Best Seller": "BEST",
+  "Trending":    "TREND",
+  "Premium":     "PRO",
+  "Hot":         "HOT",
+  "Sale":        "SALE",
+};
+
+const PRIORITY = ["New Arrival", "Premium", "Trending", "Best Seller", "Hot", "Sale"];
 
 export function ProductCard({ product, onView, compact = false }: ProductCardProps) {
   const { addItem } = useCart();
@@ -34,12 +45,10 @@ export function ProductCard({ product, onView, compact = false }: ProductCardPro
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  // Show at most 2 badges, prioritised
-  const PRIORITY = ["New Arrival", "Premium", "Trending", "Best Seller", "Hot", "Sale"];
-  const topBadges = (product.badges ?? [])
+  // Show only the single most-important badge
+  const topBadge = (product.badges ?? [])
     .slice()
-    .sort((a, b) => PRIORITY.indexOf(a) - PRIORITY.indexOf(b))
-    .slice(0, 2);
+    .sort((a, b) => PRIORITY.indexOf(a) - PRIORITY.indexOf(b))[0] ?? null;
 
   return (
     <div
@@ -47,7 +56,7 @@ export function ProductCard({ product, onView, compact = false }: ProductCardPro
       onClick={() => onView?.(product)}
     >
       {/* Image */}
-      <div className={`relative overflow-hidden bg-gray-50 ${compact ? "aspect-[3/4]" : "aspect-[3/4]"}`}>
+      <div className={`relative overflow-hidden bg-gray-50 aspect-[3/4]`}>
         <img
           src={product.image}
           alt={product.name}
@@ -55,17 +64,14 @@ export function ProductCard({ product, onView, compact = false }: ProductCardPro
           loading="lazy"
         />
 
-        {/* Top-left badges — stacked, no overlap */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-          {topBadges.map((badge) => (
-            <span
-              key={badge}
-              className={`text-[8px] font-body font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap ${BADGE_STYLES[badge] ?? "bg-primary text-white"}`}
-            >
-              {badge === "New Arrival" ? "NEW" : badge === "Best Seller" ? "BEST" : badge.toUpperCase()}
+        {/* Single top-left badge */}
+        {topBadge && (
+          <div className="absolute top-2 left-2 z-10">
+            <span className={`text-[8px] font-body font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap ${BADGE_STYLES[topBadge] ?? "bg-primary text-white"}`}>
+              {BADGE_LABELS[topBadge] ?? topBadge}
             </span>
-          ))}
-        </div>
+          </div>
+        )}
 
         {/* Discount badge — bottom right */}
         {discount > 0 && (

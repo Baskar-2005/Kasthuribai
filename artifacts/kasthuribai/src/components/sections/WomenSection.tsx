@@ -2,173 +2,182 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PRODUCTS, Product, Color, Subcategory, Style } from "@/data/mock-data";
 import { ProductCard } from "./ProductCard";
-import { FilterPanel, FilterState } from "./FilterPanel";
+import { ArrowRight, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface WomenSectionProps {
   onViewProduct?: (product: Product) => void;
 }
 
 const WOMEN_SUBCATEGORIES: Subcategory[] = ["Sarees", "Kurtis", "Chudidhar", "Gowns", "Lehengas"];
-const WOMEN_COLORS: Color[] = ["Red", "Blue", "Pink", "Purple", "Green", "Yellow", "Black", "Gold"];
-const WOMEN_SIZES: string[] = ["XS", "S", "M", "L", "XL"];
 const WOMEN_STYLES: Style[] = ["Daily Wear", "Casual Wear", "Party Wear", "Festive", "Wedding"];
+const SORT_OPTIONS = ["Default", "Price: Low to High", "Price: High to Low", "Newest First"];
+
+const TABS = [
+  { id: "all",      label: "All",         emoji: "👗" },
+  { id: "new",      label: "New",         emoji: "✨" },
+  { id: "trending", label: "Trending",    emoji: "🔥" },
+  { id: "premium",  label: "Premium",     emoji: "💎" },
+];
 
 export function WomenSection({ onViewProduct }: WomenSectionProps) {
-  const [filters, setFilters] = useState<FilterState>({
-    priceRange: [0, 5000],
-    colors: [],
-    sizes: [],
-    subcategories: [],
-    ageRanges: [],
-    styles: [],
-    sortBy: "Default",
-  });
+  const [activeTab, setActiveTab]     = useState<"all" | "new" | "trending" | "premium">("all");
+  const [activeSubcat, setActiveSubcat] = useState<string | null>(null);
+  const [activeStyle, setActiveStyle]   = useState<string | null>(null);
+  const [sortBy, setSortBy]             = useState("Default");
 
-  const [activeTab, setActiveTab] = useState<"all" | "new" | "trending" | "premium">("all");
+  const womenProducts = useMemo(() => PRODUCTS.filter(p => p.category === "Women" || p.category === "Traditional"), []);
 
-  const womenProducts = useMemo(() => {
-    return PRODUCTS.filter((p) => p.category === "Women" || p.category === "Traditional");
-  }, []);
-
-  const filteredProducts = useMemo(() => {
-    let result = womenProducts;
-
-    // Filter by tab
-    if (activeTab === "new") {
-      result = result.filter((p) => p.isNewArrival);
-    } else if (activeTab === "trending") {
-      result = result.filter((p) => p.isTrending);
-    } else if (activeTab === "premium") {
-      result = result.filter((p) => p.badges?.includes("Premium"));
-    }
-
-    // Apply filters
-    if (filters.subcategories.length > 0) {
-      result = result.filter((p) => p.subcategory && filters.subcategories.includes(p.subcategory));
-    }
-
-    if (filters.colors.length > 0) {
-      result = result.filter((p) => p.colors?.some((c) => filters.colors.includes(c)));
-    }
-
-    if (filters.sizes.length > 0) {
-      result = result.filter((p) => p.sizes?.some((s) => filters.sizes.includes(s)));
-    }
-
-    if (filters.styles.length > 0) {
-      result = result.filter((p) => p.styles?.some((s) => filters.styles.includes(s)));
-    }
-
-    // Price filter
-    result = result.filter((p) => p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]);
-
-    // Sort
-    if (filters.sortBy === "Price: Low to High") {
-      result = [...result].sort((a, b) => a.price - b.price);
-    } else if (filters.sortBy === "Price: High to Low") {
-      result = [...result].sort((a, b) => b.price - a.price);
-    } else if (filters.sortBy === "Rating: High to Low") {
-      result = [...result].sort((a, b) => b.rating - a.rating);
-    } else if (filters.sortBy === "Most Reviewed") {
-      result = [...result].sort((a, b) => (b.reviewCount ?? 0) - (a.reviewCount ?? 0));
-    } else if (filters.sortBy === "Newest First") {
-      result = [...result].sort((a, b) => (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0));
-    }
-
-    return result;
-  }, [womenProducts, filters, activeTab]);
-
-  const tabs = [
-    { id: "all", label: "All", icon: "👗" },
-    { id: "new", label: "New Arrivals", icon: "🆕" },
-    { id: "trending", label: "Trending Now", icon: "🔥" },
-    { id: "premium", label: "Premium", icon: "✨" },
-  ];
+  const filtered = useMemo(() => {
+    let r = womenProducts;
+    if (activeTab === "new")      r = r.filter(p => p.isNewArrival);
+    if (activeTab === "trending") r = r.filter(p => p.isTrending);
+    if (activeTab === "premium")  r = r.filter(p => p.badges?.includes("Premium"));
+    if (activeSubcat) r = r.filter(p => p.subcategory === activeSubcat);
+    if (activeStyle)  r = r.filter(p => p.styles?.includes(activeStyle as Style));
+    if (sortBy === "Price: Low to High")  r = [...r].sort((a, b) => a.price - b.price);
+    if (sortBy === "Price: High to Low")  r = [...r].sort((a, b) => b.price - a.price);
+    if (sortBy === "Newest First")         r = [...r].sort((a, b) => (b.isNewArrival ? 1 : 0) - (a.isNewArrival ? 1 : 0));
+    return r;
+  }, [womenProducts, activeTab, activeSubcat, activeStyle, sortBy]);
 
   return (
-    <section id="women" className="py-12 sm:py-16 md:py-24 bg-gradient-to-b from-rose-50/50 to-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-8 sm:mb-10">
-          <span className="text-primary font-body font-semibold text-xs sm:text-sm uppercase tracking-wider">
-            👗 Women's Collection
-          </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold mt-1 mb-2 sm:mb-3">
-            Women's Wear
-          </h2>
-          <div className="w-16 sm:w-20 h-1 bg-gold rounded-full mx-auto"></div>
-          <p className="text-sm sm:text-base text-muted-foreground font-body mt-4 max-w-2xl mx-auto">
-            Sarees, Kurtis, Chudidhar & Gowns
-          </p>
+    <section id="women" className="relative overflow-hidden">
+      {/* Hero banner */}
+      <div className="relative bg-gradient-to-br from-rose-950 via-pink-900 to-rose-900 py-14 sm:py-20 overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-rose-400/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-pink-400/15 rounded-full blur-3xl" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 border border-rose-300/30 bg-rose-300/10 text-rose-200 text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-[0.2em] mb-4">
+                <span>👗</span> Women's Collection
+              </div>
+              <h2 className="text-4xl sm:text-5xl font-display font-bold text-white leading-tight mb-2">
+                Women's <span className="text-rose-300">Wear</span>
+              </h2>
+              <p className="text-rose-100/60 font-body text-sm">
+                Sarees · Kurtis · Chudidhar · Gowns · Lehengas
+              </p>
+            </div>
+            <div className="hidden sm:flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-white/90 font-bold text-2xl">{womenProducts.length}+</p>
+                <p className="text-white/40 text-[10px] uppercase tracking-widest">Styles</p>
+              </div>
+              <button
+                onClick={() => window.location.href = "/collections?category=Women"}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm font-semibold border border-white/20 transition-all"
+              >
+                Shop All <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-body font-semibold transition-all duration-250 ${
-                activeTab === tab.id
-                  ? "bg-primary text-white shadow-md shadow-primary/20"
-                  : "bg-white border border-border text-foreground hover:border-primary hover:text-primary"
-              }`}
-            >
-              <span>{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-0.5" style={{ scrollbarWidth: "none" }}>
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={cn(
+                  "shrink-0 flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 whitespace-nowrap border",
+                  activeTab === tab.id
+                    ? "bg-white text-rose-900 border-white shadow-lg"
+                    : "border-white/20 text-white/70 hover:text-white hover:border-white/40"
+                )}
+              >
+                <span>{tab.emoji}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
+      </div>
 
-        {/* Main Content */}
-        <div className="flex gap-6 lg:gap-8">
-          {/* Filter Panel */}
-          <FilterPanel
-            filters={filters}
-            onFilterChange={setFilters}
-            availableSubcategories={WOMEN_SUBCATEGORIES}
-            availableColors={WOMEN_COLORS}
-            availableSizes={WOMEN_SIZES}
-            availableStyles={WOMEN_STYLES}
-            showAgeFilter={false}
-            className="w-64 flex-shrink-0"
-          />
-
-          {/* Products Grid */}
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm text-muted-foreground font-body">
-                {filteredProducts.length} products
-              </span>
+      {/* Quick filters bar */}
+      <div className="bg-gray-50/80 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-1 overflow-x-auto scrollbar-hide" style={{ scrollbarWidth: "none" }}>
+              {WOMEN_SUBCATEGORIES.map(sub => (
+                <button
+                  key={sub}
+                  onClick={() => setActiveSubcat(activeSubcat === sub ? null : sub)}
+                  className={cn(
+                    "shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                    activeSubcat === sub
+                      ? "bg-rose-700 text-white border-rose-700"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-rose-300"
+                  )}
+                >
+                  {sub}
+                </button>
+              ))}
+              <div className="w-px h-4 bg-gray-200 flex-shrink-0 mx-1" />
+              {WOMEN_STYLES.map(style => (
+                <button
+                  key={style}
+                  onClick={() => setActiveStyle(activeStyle === style ? null : style)}
+                  className={cn(
+                    "shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border",
+                    activeStyle === style
+                      ? "bg-rose-700 text-white border-rose-700"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-rose-300"
+                  )}
+                >
+                  {style}
+                </button>
+              ))}
             </div>
 
-            <motion.div
-              layout
-              className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6"
-            >
-              <AnimatePresence>
-                {filteredProducts.map((product) => (
-                  <motion.div
-                    layout
-                    key={product.id}
-                    initial={{ opacity: 0, scale: 0.92 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.88 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <ProductCard product={product} onView={onViewProduct} />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
-
-            {filteredProducts.length === 0 && (
-              <div className="text-center py-12 sm:py-20 text-muted-foreground font-body">
-                <span className="text-3xl sm:text-4xl block mb-2 sm:mb-3">🔍</span>
-                No products found matching your filters.
-              </div>
-            )}
+            <div className="relative flex-shrink-0">
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value)}
+                className="appearance-none text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl pl-3 pr-7 py-2 outline-none cursor-pointer hover:border-gray-400 transition-colors"
+              >
+                {SORT_OPTIONS.map(o => <option key={o}>{o}</option>)}
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+            </div>
+            <span className="text-xs text-gray-400 font-body flex-shrink-0">{filtered.length} items</span>
           </div>
+        </div>
+      </div>
+
+      {/* Product grid */}
+      <div className="bg-white py-8 sm:py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AnimatePresence mode="wait">
+            {filtered.length === 0 ? (
+              <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-20 text-gray-400">
+                <span className="text-4xl block mb-3">🔍</span>
+                <p className="font-body">No products match your filters.</p>
+                <button onClick={() => { setActiveSubcat(null); setActiveStyle(null); setActiveTab("all"); }} className="mt-4 text-primary text-sm font-semibold hover:underline">Clear filters</button>
+              </motion.div>
+            ) : (
+              <motion.div key={activeTab + activeSubcat + activeStyle} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                {filtered.map(p => (
+                  <ProductCard key={p.id} product={p} onView={onViewProduct} />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {filtered.length > 0 && (
+            <div className="mt-8 flex justify-center">
+              <button
+                onClick={() => window.location.href = "/collections?category=Women"}
+                className="flex items-center gap-2 px-6 py-3 rounded-full border-2 border-rose-700 text-rose-700 font-semibold text-sm hover:bg-rose-700 hover:text-white transition-all"
+              >
+                View All Women's Wear <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </section>

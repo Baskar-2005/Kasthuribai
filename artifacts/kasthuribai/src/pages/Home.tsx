@@ -5,7 +5,6 @@ import { Hero } from "@/components/sections/Hero";
 import { Categories } from "@/components/sections/Categories";
 import { NewArrivals } from "@/components/sections/NewArrivals";
 import { OfferBanner } from "@/components/sections/OfferBanner";
-// import { Products } from "@/components/sections/Products";
 import { CategoryPreview } from "@/components/sections/CategoryPreview";
 import { BestSellers } from "@/components/sections/BestSellers";
 import { About } from "@/components/sections/About";
@@ -17,6 +16,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { CartToast } from "@/components/CartToast";
 import { FloatingWhatsApp } from "@/components/FloatingWhatsApp";
 import { ProductModal } from "@/components/ProductModal";
+import { RecentlyViewed } from "@/components/RecentlyViewed";
 import { Product, Category } from "@/data/mock-data";
 import { Truck, ShieldCheck, RotateCcw, Scissors } from "lucide-react";
 
@@ -49,13 +49,27 @@ function FeatureStrip() {
   );
 }
 
+function loadRecentIds(): string[] {
+  try { return JSON.parse(localStorage.getItem("kb_recent_ids") || "[]"); } catch { return []; }
+}
+
 export default function Home() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [activeFilter, setActiveFilter] = useState<Category | "All">("All");
   const [showContent, setShowContent] = useState(false);
+  const [recentIds, setRecentIds] = useState<string[]>(loadRecentIds);
 
   const handleLoadingDone = useCallback(() => {
     setShowContent(true);
+  }, []);
+
+  const handleViewProduct = useCallback((p: Product) => {
+    setSelectedProduct(p);
+    setRecentIds(prev => {
+      const updated = [p.id, ...prev.filter(id => id !== p.id)].slice(0, 10);
+      try { localStorage.setItem("kb_recent_ids", JSON.stringify(updated)); } catch {}
+      return updated;
+    });
   }, []);
 
   const handleCategoryFilter = (cat: Category) => {
@@ -66,76 +80,78 @@ export default function Home() {
     <>
       <LoadingScreen onExitComplete={handleLoadingDone} />
       {showContent && (
-      <div className="min-h-screen relative flex flex-col bg-background">
-      <Navbar isHome />
-      <main className="flex-1">
-        <Hero />
-        <FeatureStrip />
-        <Categories onCategoryFilter={handleCategoryFilter} />
-        <NewArrivals onViewProduct={setSelectedProduct} />
-        <OfferBanner />
-        
-        
-        {/* Category Preview Sections - Limited Products with Show More */}
-        <CategoryPreview
-          category="Men"
-          title="Men's Wear"
-          subtitle="Shirts, T-Shirts, Jeans & Formal Wear"
-          emoji="👔"
-          gradientFrom="from-blue-50/50"
-          gradientTo="to-white"
-          limit={6}
-          onViewProduct={setSelectedProduct}
-        />
-        <CategoryPreview
-          category="Women"
-          title="Women's Wear"
-          subtitle="Sarees, Kurtis, Chudidhar & Gowns"
-          emoji="👗"
-          gradientFrom="from-rose-50/50"
-          gradientTo="to-white"
-          limit={6}
-          onViewProduct={setSelectedProduct}
-        />
-        <CategoryPreview
-          category="Kids"
-          title="Kids' Wear"
-          subtitle="Colorful & Comfortable Collection for Kids"
-          emoji="🧒"
-          gradientFrom="from-green-50/50"
-          gradientTo="to-white"
-          limit={6}
-          onViewProduct={setSelectedProduct}
-        />
-        <CategoryPreview
-          category="Traditional"
-          title="Traditional Wear"
-          subtitle="Classic Ethnic Collection for Every Occasion"
-          emoji="🎊"
-          gradientFrom="from-amber-50/50"
-          gradientTo="to-white"
-          limit={6}
-          onViewProduct={setSelectedProduct}
-        />
-        
-        <BestSellers onViewProduct={setSelectedProduct} />
-        <About />
-        <Gallery />
-        <Reviews />
-        <Contact />
-      </main>
-      <Footer />
+        <div className="min-h-screen relative flex flex-col bg-background">
+          <Navbar isHome />
+          <main className="flex-1">
+            <Hero />
+            <FeatureStrip />
+            <Categories onCategoryFilter={handleCategoryFilter} />
+            <NewArrivals onViewProduct={handleViewProduct} />
+            <OfferBanner />
 
-      <CartDrawer />
-      <CartToast />
-      <FloatingWhatsApp />
+            {/* Recently Viewed — only shows after at least 2 products viewed */}
+            <RecentlyViewed recentIds={recentIds} onViewProduct={handleViewProduct} />
 
-      <ProductModal
-        product={selectedProduct}
-        onClose={() => setSelectedProduct(null)}
-        onSelectProduct={setSelectedProduct}
-      />
-    </div>
+            {/* Category Preview Sections */}
+            <CategoryPreview
+              category="Men"
+              title="Men's Wear"
+              subtitle="Shirts, T-Shirts, Jeans & Formal Wear"
+              emoji="👔"
+              gradientFrom="from-blue-50/50"
+              gradientTo="to-white"
+              limit={6}
+              onViewProduct={handleViewProduct}
+            />
+            <CategoryPreview
+              category="Women"
+              title="Women's Wear"
+              subtitle="Sarees, Kurtis, Chudidhar & Gowns"
+              emoji="👗"
+              gradientFrom="from-rose-50/50"
+              gradientTo="to-white"
+              limit={6}
+              onViewProduct={handleViewProduct}
+            />
+            <CategoryPreview
+              category="Kids"
+              title="Kids' Wear"
+              subtitle="Colorful & Comfortable Collection for Kids"
+              emoji="🧒"
+              gradientFrom="from-green-50/50"
+              gradientTo="to-white"
+              limit={6}
+              onViewProduct={handleViewProduct}
+            />
+            <CategoryPreview
+              category="Traditional"
+              title="Traditional Wear"
+              subtitle="Classic Ethnic Collection for Every Occasion"
+              emoji="🎊"
+              gradientFrom="from-amber-50/50"
+              gradientTo="to-white"
+              limit={6}
+              onViewProduct={handleViewProduct}
+            />
+
+            <BestSellers onViewProduct={handleViewProduct} />
+            <About />
+            <Gallery />
+            <Reviews />
+            <Contact />
+          </main>
+          <Footer />
+
+          <CartDrawer />
+          <CartToast />
+          <FloatingWhatsApp />
+
+          <ProductModal
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+            onSelectProduct={handleViewProduct}
+          />
+        </div>
       )}
     </>
   );
