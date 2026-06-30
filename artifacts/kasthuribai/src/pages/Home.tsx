@@ -78,6 +78,15 @@ export default function Home() {
 
   return (
     <>
+      {/* Preload video in background so it's buffered before the hero is shown */}
+      <video
+        src="/hero.mp4"
+        preload="auto"
+        muted
+        playsInline
+        style={{ display: "none", position: "absolute", width: 0, height: 0 }}
+        aria-hidden="true"
+      />
       <LoadingScreen onExitComplete={handleLoadingDone} />
       {showContent && (
         <div className="min-h-screen relative flex flex-col bg-background">
