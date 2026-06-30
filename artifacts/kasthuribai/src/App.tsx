@@ -10,6 +10,7 @@ import MyOrders from "@/pages/MyOrders";
 import SilverCorner from "@/pages/SilverCorner";
 import AdminDashboard from "@/pages/AdminDashboard";
 import ScanOrder from "@/pages/ScanOrder";
+import TrackOrder from "@/pages/TrackOrder";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/scan/:orderId" component={ScanOrder} />
+      <Route path="/track-order" component={TrackOrder} />
 
       <Route component={NotFound} />
     </Switch>

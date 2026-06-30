@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ShoppingBag, Search, X, User, ChevronDown, Package, UserCircle, Menu } from "lucide-react";
+import { ShoppingBag, Search, X, User, ChevronDown, Package, UserCircle, Menu, Truck } from "lucide-react";
 import { useCart } from "@/store/use-cart";
 import { cn } from "@/lib/utils";
 import { PRODUCTS } from "@/data/mock-data";
@@ -15,8 +15,9 @@ const NAV_LINKS = [
 ];
 
 const PROFILE_LINKS = [
-  { name: "Profile",   href: "/profile",   icon: UserCircle },
-  { name: "My Orders", href: "/my-orders", icon: Package    },
+  { name: "Profile",       href: "/profile",      icon: UserCircle },
+  { name: "My Orders",     href: "/my-orders",    icon: Package    },
+  { name: "Track Order",   href: "/track-order",  icon: Truck      },
 ];
 
 function KasthuribaiLogo({ onClick, dark }: { onClick: () => void; dark: boolean }) {
