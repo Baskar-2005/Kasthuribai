@@ -81,7 +81,7 @@ export function SilverProductCard({
       {/* Image */}
       <div className="relative overflow-hidden bg-slate-50 aspect-[4/5]">
         <img
-          src={imgError ? "/images/silver/_fallback.jpg" : product.images[0]}
+          src={imgError ? "/images/silver/anklets/anklets_1.png" : product.images[0]}
           alt={product.name}
           onError={() => setImgError(true)}
           className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"

@@ -6,36 +6,109 @@ interface SpinnerProps {
 }
 
 function Spinner({ className, size = "md" }: SpinnerProps) {
-  const sizeClasses = {
-    sm: "w-6 h-6",
-    md: "w-10 h-10",
-    lg: "w-16 h-16"
+  const sizeMap = {
+    sm: { outer: "w-10 h-10", text: "text-[8px]", dot: "w-1 h-1" },
+    md: { outer: "w-16 h-16", text: "text-[10px]", dot: "w-1.5 h-1.5" },
+    lg: { outer: "w-24 h-24", text: "text-[12px]", dot: "w-2 h-2" },
   }
+  const s = sizeMap[size]
 
   return (
     <div
       role="status"
       aria-label="Loading"
-      className={cn("relative inline-flex items-center justify-center", sizeClasses[size], className)}
+      className={cn("relative inline-flex items-center justify-center", s.outer, className)}
     >
-      {/* Outer ring with gradient */}
-      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-pink-500 border-r-purple-500 animate-spin" style={{ animationDuration: "1.5s" }} />
-      
-      {/* Middle ring with gradient */}
-      <div className="absolute inset-1 rounded-full border-2 border-transparent border-b-amber-400 border-l-rose-400 animate-spin" style={{ animationDuration: "2s", animationDirection: "reverse" }} />
-      
-      {/* Inner pulsing dot */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-2 h-2 rounded-full bg-gradient-to-r from-pink-500 via-purple-500 to-amber-400 animate-pulse" />
+      {/* Outermost slow gold ring */}
+      <div
+        className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
+        style={{
+          borderTopColor: "#B8860B",
+          borderRightColor: "#DAA520",
+          animationDuration: "3s",
+          animationTimingFunction: "linear",
+        }}
+      />
+
+      {/* Mid ring — opposite spin, rose/maroon */}
+      <div
+        className="absolute inset-[6px] rounded-full border-2 border-transparent animate-spin"
+        style={{
+          borderBottomColor: "#9B1B30",
+          borderLeftColor: "#C0392B",
+          animationDuration: "2s",
+          animationTimingFunction: "linear",
+          animationDirection: "reverse",
+        }}
+      />
+
+      {/* Inner ring — fast gold */}
+      <div
+        className="absolute inset-[13px] rounded-full border-[1.5px] border-transparent animate-spin"
+        style={{
+          borderTopColor: "#FFD700",
+          borderRightColor: "transparent",
+          animationDuration: "1s",
+          animationTimingFunction: "linear",
+        }}
+      />
+
+      {/* Centre — K monogram */}
+      <div
+        className="absolute inset-0 flex items-center justify-center"
+        style={{ zIndex: 10 }}
+      >
+        <span
+          className={cn("font-serif font-bold select-none", s.text)}
+          style={{
+            background: "linear-gradient(135deg, #B8860B 0%, #FFD700 50%, #DAA520 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            letterSpacing: "0.05em",
+          }}
+        >
+          K
+        </span>
       </div>
-      
-      {/* Sparkle effects */}
-      <div className="absolute -top-1 -right-1 w-1.5 h-1.5 rounded-full bg-pink-400 animate-ping" style={{ animationDelay: "0s" }} />
-      <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" style={{ animationDelay: "0.5s" }} />
-      <div className="absolute -top-1 -left-1 w-1 h-1 rounded-full bg-amber-400 animate-ping" style={{ animationDelay: "1s" }} />
-      
-      {/* Glow effect */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-amber-400/20 blur-sm animate-pulse" />
+
+      {/* Orbiting gold dot */}
+      <div
+        className={cn("absolute rounded-full animate-spin", s.dot)}
+        style={{
+          top: "2px",
+          left: "50%",
+          transformOrigin: "50% calc(50% + 10px)",
+          background: "radial-gradient(circle, #FFD700, #B8860B)",
+          boxShadow: "0 0 6px 2px rgba(218,165,32,0.7)",
+          animationDuration: "1.4s",
+          animationTimingFunction: "linear",
+        }}
+      />
+
+      {/* Orbiting maroon dot — offset 180° */}
+      <div
+        className={cn("absolute rounded-full animate-spin", s.dot)}
+        style={{
+          bottom: "2px",
+          left: "50%",
+          transformOrigin: "50% calc(-50% - 10px)",
+          background: "radial-gradient(circle, #C0392B, #9B1B30)",
+          boxShadow: "0 0 6px 2px rgba(155,27,48,0.7)",
+          animationDuration: "1.4s",
+          animationTimingFunction: "linear",
+        }}
+      />
+
+      {/* Soft glow halo */}
+      <div
+        className="absolute inset-0 rounded-full animate-pulse pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(218,165,32,0.18) 0%, rgba(155,27,48,0.08) 60%, transparent 80%)",
+          animationDuration: "2s",
+        }}
+      />
     </div>
   )
 }

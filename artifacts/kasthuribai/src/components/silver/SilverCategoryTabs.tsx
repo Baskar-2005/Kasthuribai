@@ -116,7 +116,7 @@ export const SilverCategoryGrid = memo(function SilverCategoryGrid({
     <div className="grid grid-cols-5 lg:grid-cols-10 gap-2.5">
       {SILVER_CATEGORIES.map(cat => {
         const isActive = active === cat.key;
-        const imgSrc = `/images/silver/${cat.folderName}/${cat.folderName}_1.jpg`;
+        const imgSrc = `/images/silver/${cat.folderName}/${cat.folderName}_1.png`;
 
         return (
           <motion.button

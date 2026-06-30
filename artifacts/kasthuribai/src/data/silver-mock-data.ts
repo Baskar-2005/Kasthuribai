@@ -55,9 +55,9 @@ export const SILVER_CATEGORIES: {
   { key: "kids",      title: "Kids Silver",            emoji: "🧒", subtitle: "Cute & safe silver pieces",       folderName: "kids"      },
 ];
 
-/** Returns one of the 3 real image files for a category, cycling by index */
+/** Returns one of the real image files for a category, cycling by index */
 function categoryImg(folderName: string, variant: 1 | 2 | 3): string {
-  return `/images/silver/${folderName}/${folderName}_${variant}.jpg`;
+  return `/images/silver/${folderName}/${folderName}_1.png`;
 }
 
 function mkReviews(seed: string, baseRating = 4.6) {
