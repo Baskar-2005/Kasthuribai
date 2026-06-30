@@ -80,7 +80,7 @@ export default function Home() {
     <>
       {/* Preload video in background so it's buffered before the hero is shown */}
       <video
-        src="/hero.mp4"
+        src="https://res.cloudinary.com/pmwii8vn/video/upload/v1782817144/Kasthuri_Video_wtdtra.mp4"
         preload="auto"
         muted
         playsInline
