@@ -1,0 +1,59 @@
+# PREMIUM FALLING PARTICLE ANIMATION FOR A LUXURY TEXTILE WEBSITE
+
+Create a sophisticated ambient particle system that enhances the luxury feel of the website. The particles should be subtle, elegant, and calming—never distracting or excessive. They should move naturally with soft physics, creating the impression of a premium showroom filled with warm light.
+
+Do **NOT** use flowers, leaves, threads, snowflakes, or confetti.
+
+Instead, use a combination of the following premium particles:
+
+✨ Tiny golden light particles
+
+⭐ Soft glowing stars
+
+💫 Sparkling dust
+
+🌟 Micro shimmer particles
+
+☀️ Warm sunlight dust floating in the air
+
+✨ Bokeh light circles
+
+💛 Tiny champagne-colored glowing dots
+
+🌅 Warm golden light flakes
+
+🔶 Soft translucent geometric particles
+
+💎 Crystal-like light fragments with very low opacity
+
+The particles should:
+
+* Fall slowly with random movement.
+* Occasionally drift sideways as if carried by a gentle breeze.
+* Rotate slightly while falling.
+* Fade in and out naturally.
+* Vary in size from 2px to 8px.
+* Have different opacity levels for depth.
+* Never accumulate at the bottom of the screen.
+* Disappear smoothly before reaching the bottom and respawn above the viewport.
+* React subtly to mouse movement with a slight parallax effect.
+* Use a low particle density to maintain a premium look.
+
+Color palette:
+
+* Warm Gold (#E5C76B)
+* Champagne (#F6E7B2)
+* Ivory White (#FFF9F0)
+* Soft Amber (#E9B44C)
+* Very Light Beige (#FDF7EC)
+
+Animation style:
+
+* Smooth and continuous.
+* Floating rather than falling straight down.
+* Natural easing with gentle acceleration and deceleration.
+* Soft blur on distant particles.
+* Slight glow effect without harsh bloom.
+* Maintain 60 FPS using GPU-accelerated transforms.
+
+The particles should create the feeling of sunlight reflecting on luxurious fabrics inside a premium textile showroom, making the website feel elegant, warm, modern, and worthy of an Awwwards-quality experience.

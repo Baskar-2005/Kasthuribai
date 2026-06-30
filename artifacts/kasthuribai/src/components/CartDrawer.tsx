@@ -153,6 +153,7 @@ function RazorpayPanel({ total, items, onClose }: { total: number; items: any[];
           const isVerified = await verifyPayment(paymentDetails);
 
           if (isVerified) {
+            const createdAt = new Date().toISOString();
             // Create order in store
             const newOrder = {
               id: `order_${Date.now()}`,
@@ -165,12 +166,38 @@ function RazorpayPanel({ total, items, onClose }: { total: number; items: any[];
               customerEmail: form.email,
               customerPhone: form.phone,
               shippingAddress: form.address,
-              trackingSteps: buildTrackingSteps("confirmed", new Date().toISOString()),
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              trackingSteps: buildTrackingSteps("confirmed", createdAt),
+              createdAt,
+              updatedAt: createdAt,
             };
 
             addOrder(newOrder);
+
+            // Fire-and-forget confirmation email (non-blocking)
+            const API_BASE = import.meta.env.VITE_API_URL || "https://kasthuribai.onrender.com/api";
+            fetch(`${API_BASE}/email/order-confirmation`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderId: newOrder.id,
+                customerName: form.name,
+                customerEmail: form.email,
+                customerPhone: form.phone,
+                shippingAddress: form.address,
+                items: items.map((item: any) => ({
+                  name: item.name,
+                  category: item.category,
+                  price: item.price,
+                  quantity: item.quantity,
+                  image: item.image,
+                })),
+                totalAmount: total,
+                razorpayPaymentId: paymentDetails.razorpay_payment_id,
+                razorpayOrderId: paymentDetails.razorpay_order_id,
+                createdAt,
+              }),
+            }).catch(() => {}); // silent — don't block UX on email failure
+
             clearCart();
             onClose();
             setLocation(`/order-tracking/${newOrder.id}`);

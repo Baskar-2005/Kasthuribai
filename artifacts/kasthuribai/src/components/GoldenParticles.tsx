@@ -1,80 +1,131 @@
 import { useEffect, useRef, memo } from "react";
 
-// Pre-computed particle data — low density for premium look
-const PARTICLE_COUNT = 22;
-
-interface Particle {
-  id: number;
-  x: number;         // % from left
-  size: number;      // px
-  dur: number;       // animation duration (s)
-  delay: number;     // animation delay (s)
-  driftX: number;    // sideways drift (px)
-  opacity: number;   // base opacity
-  shape: "circle" | "diamond" | "star";
-  color: string;
-}
+/*
+  Premium ambient particle system — Awwwards-quality.
+  Warm gold/champagne/ivory bokeh circles, micro diamonds, and star sparks.
+  Canvas-based, 60fps, GPU-accelerated, mouse-parallax.
+*/
 
 const COLORS = [
-  "rgba(229,199,107,VAR)",   // warm gold
-  "rgba(246,231,178,VAR)",   // champagne
-  "rgba(255,249,240,VAR)",   // ivory white
-  "rgba(233,180,76,VAR)",    // soft amber
-  "rgba(253,247,236,VAR)",   // very light beige
-];
+  [229, 199, 107], // Warm Gold  #E5C76B
+  [246, 231, 178], // Champagne  #F6E7B2
+  [255, 249, 240], // Ivory      #FFF9F0
+  [233, 180,  76], // Soft Amber #E9B44C
+  [253, 247, 236], // Lt Beige   #FDF7EC
+] as const;
 
-const particles: Particle[] = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
-  const shapes: Particle["shape"][] = ["circle", "diamond", "star"];
+type Shape = "bokeh" | "diamond" | "spark";
+
+interface P {
+  x: number; y: number;        // position (px)
+  vy: number;                  // fall speed (px/s)
+  vx: number;                  // base horizontal drift (px/s)
+  size: number;                // radius / half-size
+  phase: number;               // sine wave phase
+  freq: number;                // sine wave frequency
+  amp: number;                 // sine wave amplitude
+  rot: number;                 // current rotation (rad)
+  rotV: number;                // rotation speed (rad/s)
+  alpha: number;               // current opacity
+  maxAlpha: number;            // peak opacity
+  color: readonly [number, number, number];
+  shape: Shape;
+  blur: number;                // css blur equiv (0 = sharp, up to 1.5)
+}
+
+const N = 20; // low density = premium
+
+function makeParticle(W: number, H: number, randomY = false): P {
+  const shapes: Shape[] = ["bokeh", "bokeh", "diamond", "spark"]; // bokeh-weighted
+  const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+  const size = 2 + Math.random() * 5.5;
   return {
-    id: i,
-    x: 2 + (i / PARTICLE_COUNT) * 96 + (i % 3) * 1.5,
-    size: 2.5 + (i % 4) * 1.5,
-    dur: 9 + (i % 7) * 2.2,
-    delay: -(i * 1.1) % 14,
-    driftX: (i % 2 === 0 ? 1 : -1) * (18 + (i % 5) * 22),
-    opacity: 0.18 + (i % 5) * 0.09,
-    shape: shapes[i % 3],
-    color: COLORS[i % COLORS.length],
+    x: Math.random() * W,
+    y: randomY ? Math.random() * H : -size * 2 - Math.random() * 60,
+    vy: 14 + Math.random() * 18,       // 14–32 px/s — slow, floating
+    vx: (Math.random() - 0.5) * 6,
+    size,
+    phase: Math.random() * Math.PI * 2,
+    freq: 0.25 + Math.random() * 0.4,
+    amp: 18 + Math.random() * 45,
+    rot: Math.random() * Math.PI * 2,
+    rotV: (Math.random() - 0.5) * 0.9,
+    alpha: 0,
+    maxAlpha: 0.18 + Math.random() * 0.38,
+    color,
+    shape: shapes[Math.floor(Math.random() * shapes.length)],
+    blur: Math.random() * 1.2,
   };
-});
-
-function getColor(template: string, opacity: number) {
-  return template.replace("VAR", String(Math.round(opacity * 100) / 100));
 }
 
-// SVG star path for tiny 5-point star
-function starPath(cx: number, cy: number, r: number) {
-  const pts = Array.from({ length: 10 }, (_, i) => {
-    const angle = (Math.PI / 5) * i - Math.PI / 2;
-    const radius = i % 2 === 0 ? r : r * 0.42;
-    return `${cx + radius * Math.cos(angle)},${cy + radius * Math.sin(angle)}`;
-  });
-  return `M${pts.join("L")}Z`;
+function drawBokeh(ctx: CanvasRenderingContext2D, p: P, a: number) {
+  const [r, g, b] = p.color;
+  const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
+  grad.addColorStop(0,   `rgba(${r},${g},${b},${a})`);
+  grad.addColorStop(0.5, `rgba(${r},${g},${b},${a * 0.55})`);
+  grad.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+  ctx.beginPath();
+  ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // soft ring
+  ctx.beginPath();
+  ctx.arc(0, 0, p.size * 0.7, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(${r},${g},${b},${a * 0.25})`;
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
 }
 
-// Canvas particle system with mouse parallax
-function CanvasParticles() {
+function drawDiamond(ctx: CanvasRenderingContext2D, p: P, a: number) {
+  const [r, g, b] = p.color;
+  const s = p.size * 0.9;
+  ctx.beginPath();
+  ctx.moveTo(0, -s);
+  ctx.lineTo(s * 0.55, 0);
+  ctx.lineTo(0, s);
+  ctx.lineTo(-s * 0.55, 0);
+  ctx.closePath();
+  ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+  ctx.fill();
+  // inner highlight
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 0.45);
+  ctx.lineTo(s * 0.22, 0);
+  ctx.lineTo(0, s * 0.45);
+  ctx.lineTo(-s * 0.22, 0);
+  ctx.closePath();
+  ctx.fillStyle = `rgba(255,255,255,${a * 0.35})`;
+  ctx.fill();
+}
+
+function drawSpark(ctx: CanvasRenderingContext2D, p: P, a: number) {
+  const [r, g, b] = p.color;
+  const s = p.size;
+  // 4-point star
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const angle = (Math.PI / 4) * i;
+    const radius = i % 2 === 0 ? s : s * 0.38;
+    const px = radius * Math.cos(angle - Math.PI / 2);
+    const py = radius * Math.sin(angle - Math.PI / 2);
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+  ctx.fill();
+}
+
+function GoldenParticlesCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mouse = useRef({ x: -9999, y: -9999 });
-  const frameRef = useRef<number>(0);
-  const timeRef = useRef<number>(0);
-
-  // Particle state for canvas
-  const state = useRef(
-    particles.map((p) => ({
-      ...p,
-      // start at random Y positions
-      y: Math.random() * -120,
-      vy: 0.28 + Math.random() * 0.18,
-      phase: Math.random() * Math.PI * 2,
-      rotation: Math.random() * 360,
-    }))
-  );
+  const mouseRef = useRef({ x: -9999, y: -9999 });
+  const rafRef = useRef(0);
+  const prevTRef = useRef(0);
+  const particlesRef = useRef<P[]>([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
     const resize = () => {
@@ -82,90 +133,75 @@ function CanvasParticles() {
       canvas.height = window.innerHeight;
     };
     resize();
-    window.addEventListener("resize", resize);
 
-    const onMouse = (e: MouseEvent) => {
-      mouse.current = { x: e.clientX, y: e.clientY };
-    };
+    // init particles spread across screen
+    particlesRef.current = Array.from({ length: N }, () =>
+      makeParticle(canvas.width, canvas.height, true)
+    );
+
+    const onResize = () => resize();
+    const onMouse = (e: MouseEvent) => { mouseRef.current = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener("resize", onResize);
     window.addEventListener("mousemove", onMouse, { passive: true });
 
-    const draw = (ts: number) => {
-      const dt = Math.min((ts - timeRef.current) / 1000, 0.05);
-      timeRef.current = ts;
+    const tick = (ts: number) => {
+      const dt = Math.min((ts - prevTRef.current) / 1000, 0.05);
+      prevTRef.current = ts;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const mx = mouse.current.x / canvas.width - 0.5;
-      const my = mouse.current.y / canvas.height - 0.5;
+      const mx = (mouseRef.current.x / canvas.width  - 0.5) * 2; // -1..1
+      const my = (mouseRef.current.y / canvas.height - 0.5) * 2;
 
-      state.current.forEach((p) => {
-        p.y += p.vy * 60 * dt;
-        p.rotation += (0.3 + p.id % 3 * 0.2) * dt * 60;
-        p.phase += dt * 0.4;
+      for (const p of particlesRef.current) {
+        p.phase += p.freq * dt;
+        p.y += p.vy * dt;
+        p.x += p.vx * dt + Math.sin(p.phase) * p.amp * dt;
+        p.rot += p.rotV * dt;
 
-        // sideways sway
-        const swayX = Math.sin(p.phase) * (p.driftX * 0.012);
-        // mouse parallax — subtle
-        const px = p.x / 100 * canvas.width + swayX + mx * p.size * 4;
-        const py = p.y + canvas.scrollY;
+        // subtle mouse parallax (closer to mouse = slightly more shift)
+        const px = p.x + mx * p.size * 3.5;
+        const py = p.y + my * p.size * 1.5;
 
-        // reset when off screen
-        if (p.y > canvas.height + 20) {
-          p.y = -10 - Math.random() * 30;
-          p.phase = Math.random() * Math.PI * 2;
+        // fade-in / fade-out
+        const fadeZone = canvas.height * 0.12;
+        let a = p.maxAlpha;
+        if (p.y < fadeZone) a *= Math.max(0, p.y / fadeZone);
+        if (p.y > canvas.height - fadeZone) a *= Math.max(0, (canvas.height - p.y) / fadeZone);
+        p.alpha = a;
+
+        // reset off-screen
+        if (p.y > canvas.height + p.size * 3 || px < -80 || px > canvas.width + 80) {
+          const fresh = makeParticle(canvas.width, canvas.height, false);
+          Object.assign(p, fresh);
+          continue;
         }
 
-        // fade in near top, fade out near bottom
-        let alpha = p.opacity;
-        if (p.y < 60) alpha *= p.y / 60;
-        if (p.y > canvas.height - 80) alpha *= (canvas.height - p.y) / 80;
+        if (a <= 0.005) continue;
 
         ctx.save();
         ctx.translate(px, py);
-        ctx.rotate((p.rotation * Math.PI) / 180);
-        ctx.globalAlpha = Math.max(0, alpha);
+        ctx.rotate(p.rot);
+        if (p.blur > 0.3) ctx.filter = `blur(${p.blur.toFixed(1)}px)`;
 
-        const color = getColor(p.color, 1);
-
-        if (p.shape === "circle") {
-          // bokeh circle with soft glow
-          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, p.size);
-          grad.addColorStop(0, color);
-          grad.addColorStop(0.5, getColor(p.color, 0.6));
-          grad.addColorStop(1, "rgba(255,240,200,0)");
-          ctx.beginPath();
-          ctx.arc(0, 0, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = grad;
-          ctx.fill();
-        } else if (p.shape === "diamond") {
-          // small diamond
-          const s = p.size * 0.85;
-          ctx.beginPath();
-          ctx.moveTo(0, -s);
-          ctx.lineTo(s * 0.6, 0);
-          ctx.lineTo(0, s);
-          ctx.lineTo(-s * 0.6, 0);
-          ctx.closePath();
-          ctx.fillStyle = color;
-          ctx.fill();
-        } else {
-          // tiny 5-point star
-          const sp = new Path2D(starPath(0, 0, p.size * 0.9));
-          ctx.fillStyle = color;
-          ctx.fill(sp);
+        switch (p.shape) {
+          case "bokeh":   drawBokeh(ctx, p, a);   break;
+          case "diamond": drawDiamond(ctx, p, a); break;
+          case "spark":   drawSpark(ctx, p, a);   break;
         }
 
         ctx.restore();
-      });
+        ctx.filter = "none";
+      }
 
-      frameRef.current = requestAnimationFrame(draw);
+      rafRef.current = requestAnimationFrame(tick);
     };
 
-    frameRef.current = requestAnimationFrame(draw);
+    rafRef.current = requestAnimationFrame(tick);
 
     return () => {
-      cancelAnimationFrame(frameRef.current);
-      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onMouse);
     };
   }, []);
@@ -173,12 +209,16 @@ function CanvasParticles() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-[5]"
       aria-hidden="true"
-      style={{ willChange: "transform" }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 5,
+        pointerEvents: "none",
+        willChange: "transform",
+      }}
     />
   );
 }
 
-const GoldenParticles = memo(CanvasParticles);
-export default GoldenParticles;
+export default memo(GoldenParticlesCanvas);
