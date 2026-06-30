@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, Star, Shield, Truck, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { SilverProduct, SILVER_PRODUCTS } from "@/data/silver-mock-data";
 import { formatPrice } from "@/lib/utils";
-import { SilverWhatsAppOrderButton } from "@/components/silver/SilverWhatsAppOrderButton";
 import { useCart } from "@/store/use-cart";
 import { cn } from "@/lib/utils";
 
@@ -227,14 +226,13 @@ export function SilverProductDetailsModal({
 
                 {/* Actions */}
                 <div className="flex flex-col gap-3 mb-6">
-                  <SilverWhatsAppOrderButton product={product} />
                   <button
                     onClick={handleAddToCart}
                     className={cn(
                       "w-full py-3.5 rounded-2xl font-semibold text-sm transition-all duration-300",
                       added
                         ? "bg-emerald-500 text-white"
-                        : "bg-slate-100 hover:bg-slate-200 text-slate-900"
+                        : "bg-slate-900 hover:bg-slate-700 text-white"
                     )}
                   >
                     {added ? "Added to Cart!" : "Add to Cart"}

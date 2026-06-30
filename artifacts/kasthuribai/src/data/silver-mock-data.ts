@@ -57,7 +57,8 @@ export const SILVER_CATEGORIES: {
 
 /** Returns one of the real image files for a category, cycling by index */
 function categoryImg(folderName: string, variant: 1 | 2 | 3): string {
-  return `/images/silver/${folderName}/${folderName}_1.png`;
+  const v = variant <= 2 ? variant : 1;
+  return `/images/silver/${folderName}/${folderName}_${v}.png`;
 }
 
 function mkReviews(seed: string, baseRating = 4.6) {
