@@ -11,7 +11,7 @@ export function Hero() {
       }}
     >
       <video
-        src="/hero.mp4"
+        src="/hero-sm.mp4"
         autoPlay
         muted
         loop
