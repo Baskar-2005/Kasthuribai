@@ -1,0 +1,62 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "vzarrdWdoTUUKjMKg_cl0"
+uri = "file://artifacts/kasthuribai/public/images/products/men_formal_shirt.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "OvJl5l46xS2gms6Fzd-u_"
+uri = "file://artifacts/kasthuribai/public/images/products/men_casual_shirt.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "4oF4GEnpQRsAqu5LrPIib"
+uri = "file://artifacts/kasthuribai/public/images/products/men_polo_tshirt.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "8iFNgJ3Ql_8_kn6RVTG7V"
+uri = "file://artifacts/kasthuribai/public/images/products/men_denim_jeans.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "XBJtQfk8PHeTgbKJQq6rY"
+uri = "file://artifacts/kasthuribai/public/images/products/men_formal_blazer.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "tp_0ZsYkM_a2ea0eYBni9"
+uri = "file://artifacts/kasthuribai/public/images/products/men_sherwani.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "_yQj1_2HavGB-PZ2XTuQ3"
+uri = "file://artifacts/kasthuribai/public/images/products/men_dhoti_set.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "zVpbSJiqzE9wpcLRicBxg"
+uri = "file://artifacts/kasthuribai/public/images/products/men_nehru_jacket.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "YuSyRNMqwjCOlHUCa8ats"
+uri = "file://artifacts/kasthuribai/public/images/products/men_sportswear.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "RfWUyYOAN6cZqoFSba0d-"
+uri = "file://artifacts/kasthuribai/public/images/products/saree_kanjeevaram.png"
+type = "image"
+title = "generated_image"
