@@ -174,7 +174,8 @@ function RazorpayPanel({ total, items, onClose }: { total: number; items: any[];
             addOrder(newOrder);
 
             // Fire-and-forget confirmation email (non-blocking)
-            fetch(`/api/email/order-confirmation`, {
+            const API_BASE = import.meta.env.VITE_API_URL || "https://kasthuribai.onrender.com/api";
+            fetch(`${API_BASE}/email/order-confirmation`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
