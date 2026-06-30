@@ -1,10 +1,16 @@
 import { CartItem } from "@/store/use-cart";
 
-// Razorpay key ID (public key) - loaded from environment variable
-const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID;
+let _cachedKeyId: string | null = null;
 
-// API base URL - adjust based on your environment
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://kasthuribai.onrender.com/api";
+async function getRazorpayKeyId(): Promise<string> {
+  if (_cachedKeyId) return _cachedKeyId;
+  const response = await fetch("/api/razorpay/key");
+  if (!response.ok) throw new Error("Failed to fetch Razorpay key");
+  const data = await response.json();
+  if (!data.success || !data.keyId) throw new Error("Invalid Razorpay key response");
+  _cachedKeyId = data.keyId as string;
+  return _cachedKeyId;
+}
 
 declare global {
   interface Window {
@@ -91,7 +97,7 @@ export const createRazorpayOrder = async (
   customerDetails: CustomerDetails
 ): Promise<RazorpayOrder> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/razorpay/create-order`, {
+    const response = await fetch(`/api/razorpay/create-order`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -133,7 +139,7 @@ export const verifyPayment = async (
   paymentDetails: PaymentDetails
 ): Promise<boolean> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/razorpay/verify-payment`, {
+    const response = await fetch(`/api/razorpay/verify-payment`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -169,8 +175,10 @@ export const initializePayment = async (
     throw new Error("Failed to load Razorpay script. Please check your internet connection and try again.");
   }
 
+  const keyId = await getRazorpayKeyId();
+
   const options = {
-    key: RAZORPAY_KEY_ID,
+    key: keyId,
     amount: order.amount,
     currency: order.currency,
     name: "KasthuriBai",
