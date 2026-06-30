@@ -8,7 +8,7 @@ import {
   RefreshCw, LogOut, ChevronDown, Search, User, Phone, Mail,
   MapPin, CreditCard, Calendar, AlertCircle, Star, TrendingUp,
   RotateCcw, Banknote, Edit3, Save, X, Bell, MessageSquare,
-  CheckCircle, ChevronRight, Filter,
+  CheckCircle, ChevronRight, Filter, Github, Loader2, CloudUpload,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -322,8 +322,30 @@ export default function AdminDashboard() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [pushState, setPushState] = useState<"idle" | "pushing" | "success" | "error">("idle");
+  const [pushMsg, setPushMsg] = useState("");
 
   useEffect(() => { seedIfEmpty(); }, [seedIfEmpty]);
+
+  async function handleGitHubPush() {
+    setPushState("pushing");
+    setPushMsg("");
+    try {
+      const res = await fetch("/api/github/push", { method: "POST" });
+      const json = await res.json();
+      if (json.ok) {
+        setPushState("success");
+        setPushMsg(json.message || "Pushed!");
+      } else {
+        setPushState("error");
+        setPushMsg(json.error || "Push failed.");
+      }
+    } catch (e: unknown) {
+      setPushState("error");
+      setPushMsg(e instanceof Error ? e.message : "Network error.");
+    }
+    setTimeout(() => setPushState("idle"), 4000);
+  }
 
   const unreadIssues = useMemo(() => issues.filter(i => !i.read).length, [issues]);
 
@@ -389,6 +411,39 @@ export default function AdminDashboard() {
               )}
             </button>
           ))}
+          {/* GitHub push button */}
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={handleGitHubPush}
+              disabled={pushState === "pushing"}
+              title="Push latest changes to GitHub"
+              style={{
+                padding: "7px 13px", borderRadius: 10, border: "none", cursor: pushState === "pushing" ? "not-allowed" : "pointer",
+                background: pushState === "success" ? "rgba(22,163,74,0.25)" : pushState === "error" ? "rgba(220,38,38,0.25)" : "rgba(255,249,240,0.1)",
+                color: pushState === "success" ? "#86efac" : pushState === "error" ? "#fca5a5" : "#FFF9F0",
+                display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, fontFamily: "inherit",
+                transition: "background 0.2s, color 0.2s",
+              }}>
+              {pushState === "pushing"
+                ? <><Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />Pushing…</>
+                : pushState === "success"
+                ? <><CheckCircle size={13} />Pushed!</>
+                : pushState === "error"
+                ? <><XCircle size={13} />Failed</>
+                : <><CloudUpload size={13} /><Github size={12} /></>}
+            </button>
+            {(pushState === "success" || pushState === "error") && pushMsg && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 6px)", right: 0, minWidth: 220, maxWidth: 320,
+                background: pushState === "success" ? "rgba(22,163,74,0.95)" : "rgba(185,28,28,0.95)",
+                color: "#fff", fontSize: 11, padding: "6px 10px", borderRadius: 8,
+                whiteSpace: "pre-wrap", wordBreak: "break-all", zIndex: 100,
+                boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+              }}>
+                {pushMsg}
+              </div>
+            )}
+          </div>
           <button onClick={() => setLastRefreshed(new Date())}
             style={{ padding: "7px 12px", borderRadius: 10, border: "none", cursor: "pointer", background: "rgba(255,249,240,0.1)", color: "#FFF9F0", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>
             <RefreshCw size={13} />
