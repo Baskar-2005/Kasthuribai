@@ -13,6 +13,7 @@ import {
 import { QRCodeSVG } from "qrcode.react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Link } from "wouter";
+import PrintInvoice from "@/components/PrintInvoice";
 
 const ADMIN_TOKEN = "kasthuribai@admin";
 
@@ -324,6 +325,7 @@ export default function AdminDashboard() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [printingOrderId, setPrintingOrderId] = useState<string | null>(null);
   const [pushState, setPushState] = useState<"idle" | "pushing" | "success" | "error">("idle");
   const [pushMsg, setPushMsg] = useState("");
 
@@ -677,10 +679,16 @@ export default function AdminDashboard() {
                                 <div>
                                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                                     <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(25,38%,50%)" }}>Update Status</p>
-                                    <button onClick={() => setEditingId(order.id)}
-                                      style={{ padding: "5px 10px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit", background: "rgba(37,99,235,0.1)", color: "#2563eb", display: "flex", alignItems: "center", gap: 4 }}>
-                                      <Edit3 size={11} />Edit Details
-                                    </button>
+                                    <div style={{ display: "flex", gap: 6 }}>
+                                      <button onClick={() => setPrintingOrderId(order.id)}
+                                        style={{ padding: "5px 10px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit", background: "rgba(181,58,46,0.1)", color: "hsl(4,60%,38%)", display: "flex", alignItems: "center", gap: 4 }}>
+                                        🖨️ Print
+                                      </button>
+                                      <button onClick={() => setEditingId(order.id)}
+                                        style={{ padding: "5px 10px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, fontFamily: "inherit", background: "rgba(37,99,235,0.1)", color: "#2563eb", display: "flex", alignItems: "center", gap: 4 }}>
+                                        <Edit3 size={11} />Edit
+                                      </button>
+                                    </div>
                                   </div>
                                   <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                                     {ALL_STATUSES.map(s => {
@@ -733,6 +741,12 @@ export default function AdminDashboard() {
       <AnimatePresence>
         {editingId && <EditDetailsModal key={editingId} orderId={editingId} onClose={() => setEditingId(null)} />}
       </AnimatePresence>
+
+      {/* Print invoice modal */}
+      {printingOrderId && (() => {
+        const o = orders.find(ord => ord.id === printingOrderId);
+        return o ? <PrintInvoice order={o} onClose={() => setPrintingOrderId(null)} /> : null;
+      })()}
     </div>
   );
 }
