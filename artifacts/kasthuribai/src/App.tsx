@@ -12,8 +12,6 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import ScanOrder from "@/pages/ScanOrder";
 import TrackOrder from "@/pages/TrackOrder";
 import NotFound from "@/pages/not-found";
-import GoldenParticles from "@/components/GoldenParticles";
-
 const queryClient = new QueryClient();
 
 function Router() {
@@ -39,7 +37,6 @@ function App() {
     <ThemeProvider defaultTheme="light">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <GoldenParticles />
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             {/* <WelcomeAudio /> — audio disabled */}
             <Router />
