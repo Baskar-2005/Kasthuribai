@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 function MandalaRings() {
@@ -103,28 +103,6 @@ function ProgressBar({ progress }: { progress: number }) {
   );
 }
 
-const PARTICLES = Array.from({ length: 16 }, (_, i) => ({
-  id: i,
-  x: 5 + (i / 16) * 90,
-  delay: (i * 0.37) % 4,
-  duration: 4 + (i % 4),
-  size: 1 + (i % 3),
-  drift: (i % 2 === 0 ? 1 : -1) * (10 + (i % 4) * 8),
-}));
-
-const Particles = memo(function Particles() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {PARTICLES.map((p) => (
-        <motion.div key={p.id}
-          className="absolute rounded-full bg-amber-300/40"
-          style={{ left: `${p.x}%`, bottom: "-4px", width: p.size, height: p.size }}
-          animate={{ y: [0, -(280 + (p.id % 3) * 80)], opacity: [0, 0.8, 0], x: [0, p.drift] }}
-          transition={{ repeat: Infinity, duration: p.duration, delay: p.delay, ease: "easeOut" }} />
-      ))}
-    </div>
-  );
-});
 
 function CurtainPanels({ exiting }: { exiting: boolean }) {
   return (
@@ -181,7 +159,6 @@ export function LoadingScreen({ onExitComplete }: LoadingScreenProps) {
             className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
             style={{ background: "radial-gradient(ellipse at 50% 60%,#2a0610 0%,#150308 45%,#0a0205 100%)" }}
             exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-            <Particles />
             <motion.p className="font-body text-amber-300/60 text-[10px] sm:text-xs tracking-[0.3em] uppercase mb-6 sm:mb-8"
               initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}>
