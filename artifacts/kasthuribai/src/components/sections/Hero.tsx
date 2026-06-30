@@ -12,6 +12,7 @@ export function Hero() {
     >
       <video
         src="/hero.mp4"
+        poster="/hero-poster.jpg"
         autoPlay
         muted
         loop
