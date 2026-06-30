@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type OrderStatus =
-  | 'pending' | 'confirmed' | 'processing' | 'shipped'
+  | 'pending' | 'confirmed' | 'packed' | 'shipped'
   | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned' | 'refunded';
 
 export interface OrderItem {
@@ -63,14 +63,14 @@ export interface Order {
 const DELIVERY_STEPS: Array<{ status: OrderStatus; label: string; description: string }> = [
   { status: 'pending',          label: 'Order Placed',      description: 'Your order has been received' },
   { status: 'confirmed',        label: 'Payment Confirmed', description: 'Payment verified successfully' },
-  { status: 'processing',       label: 'Packed',            description: 'Items packed and ready to ship' },
+  { status: 'packed',           label: 'Packed',            description: 'Items packed and ready to ship' },
   { status: 'shipped',          label: 'Shipped',           description: 'Handed over to courier' },
   { status: 'out_for_delivery', label: 'Out for Delivery',  description: 'Delivery agent is on the way' },
   { status: 'delivered',        label: 'Delivered',         description: 'Delivered to your doorstep' },
 ];
 
 const DELIVERY_STATUS_ORDER: OrderStatus[] = [
-  'pending', 'confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered',
+  'pending', 'confirmed', 'packed', 'shipped', 'out_for_delivery', 'delivered',
 ];
 
 export function buildTrackingSteps(currentStatus: OrderStatus, baseDate: string): OrderTrackingStep[] {
@@ -221,7 +221,7 @@ function makeSeedOrders(): Order[] {
       orderNumber: 'KB25005',
       razorpayOrderId: 'order_seed_005',
       razorpayPaymentId: 'pay_YZAB0011223344',
-      status: 'processing',
+      status: 'packed',
       paymentMethod: 'PhonePe UPI',
       customerName: 'Rajan Murugan',
       customerEmail: 'rajan@example.com',
@@ -235,7 +235,7 @@ function makeSeedOrders(): Order[] {
       items: [
         { id: 'i7', name: 'Traditional Dhoti – White Premium', image: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&q=80', price: 599, originalPrice: 799, quantity: 3, category: 'Traditional', rating: 4.2, reviewCount: 48, size: 'Free Size', color: 'White' },
       ],
-      trackingSteps: buildTrackingSteps('processing', ago(1)),
+      trackingSteps: buildTrackingSteps('packed', ago(1)),
       createdAt: ago(1),
       updatedAt: ago(0, 8),
     },
@@ -292,7 +292,7 @@ function makeSeedOrders(): Order[] {
       trackingSteps: [
         { status: 'pending', label: 'Order Placed', description: 'Order received', timestamp: ago(14), completed: true },
         { status: 'confirmed', label: 'Payment Confirmed', description: 'Payment verified', timestamp: ago(14, -0.2), completed: true },
-        { status: 'processing', label: 'Packed', description: 'Items packed', timestamp: ago(13), completed: true },
+        { status: 'packed', label: 'Packed', description: 'Items packed', timestamp: ago(13), completed: true },
         { status: 'shipped', label: 'Shipped', description: 'Handed to courier', timestamp: ago(12), completed: true },
         { status: 'delivered', label: 'Delivered', description: 'Delivered successfully', timestamp: ago(9), completed: true },
         { status: 'returned', label: 'Return Requested', description: 'Wrong size received', timestamp: ago(7), completed: true },
@@ -418,7 +418,7 @@ function makeSeedOrders(): Order[] {
       orderNumber: 'DEMO005',
       razorpayOrderId: 'pay_demo_Cq2xJn9pFr',
       razorpayPaymentId: 'pay_demo_Cq2xJn9pFr',
-      status: 'processing',
+      status: 'packed',
       paymentMethod: 'Credit Card',
       customerName: 'Ravi Kumar',
       customerEmail: 'ravi.k@yahoo.com',
@@ -430,7 +430,7 @@ function makeSeedOrders(): Order[] {
       items: [
         { id: 'p6', name: 'Party Wear Evening Gown', image: '', price: 1999, quantity: 3, category: 'Festive', rating: 4.4, reviewCount: 43 },
       ],
-      trackingSteps: buildTrackingSteps('processing', ago(0, 2)),
+      trackingSteps: buildTrackingSteps('packed', ago(0, 2)),
       createdAt: ago(0, 2),
       updatedAt: ago(0, 1),
     },
@@ -508,14 +508,14 @@ export const useOrders = create<OrdersStore>()(
       getOrderById: (orderId) => get().orders.find((o) => o.id === orderId),
       getOrdersByEmail: (email) => get().orders.filter((o) => o.customerEmail === email),
     }),
-    { name: 'kasthuribai-orders-v2' },
+    { name: 'kasthuribai-orders-v3' },
   ),
 );
 
 // ── Cross-tab sync: when another tab writes orders to localStorage, re-hydrate ──
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
-    if (e.key === 'kasthuribai-orders-v2') {
+    if (e.key === 'kasthuribai-orders-v3') {
       useOrders.persist.rehydrate();
     }
   });

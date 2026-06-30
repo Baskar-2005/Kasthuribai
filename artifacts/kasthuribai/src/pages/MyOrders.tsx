@@ -15,7 +15,7 @@ import { Navbar } from "@/components/sections/Navbar";
 const STATUS_CFG: Record<OrderStatus, { label: string; color: string; bg: string; border: string; icon: React.ElementType; dot: string }> = {
   pending:          { label: "Pending",         color: "text-yellow-700", bg: "bg-yellow-50",  border: "border-yellow-200", icon: Clock,       dot: "bg-yellow-400" },
   confirmed:        { label: "Confirmed",        color: "text-blue-700",   bg: "bg-blue-50",    border: "border-blue-200",   icon: CheckCircle, dot: "bg-blue-400" },
-  processing:       { label: "Processing",       color: "text-purple-700", bg: "bg-purple-50",  border: "border-purple-200", icon: Package,     dot: "bg-purple-400" },
+  packed:           { label: "Packed",           color: "text-purple-700", bg: "bg-purple-50",  border: "border-purple-200", icon: Package,     dot: "bg-purple-400" },
   shipped:          { label: "Shipped",          color: "text-indigo-700", bg: "bg-indigo-50",  border: "border-indigo-200", icon: Truck,       dot: "bg-indigo-400" },
   out_for_delivery: { label: "Out for Delivery", color: "text-orange-700", bg: "bg-orange-50",  border: "border-orange-200", icon: Truck,       dot: "bg-orange-400" },
   delivered:        { label: "Delivered",        color: "text-green-700",  bg: "bg-green-50",   border: "border-green-200",  icon: CheckCircle, dot: "bg-green-500" },
@@ -29,13 +29,13 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "all",              label: "All" },
   { key: "out_for_delivery", label: "Out for Delivery" },
   { key: "shipped",          label: "Shipped" },
-  { key: "processing",       label: "Processing" },
+  { key: "packed",           label: "Packed" },
   { key: "delivered",        label: "Delivered" },
   { key: "cancelled",        label: "Cancelled" },
   { key: "returned",         label: "Returned" },
 ];
 
-const DELIVERY_ORDER: OrderStatus[] = ["pending","confirmed","processing","shipped","out_for_delivery","delivered"];
+const DELIVERY_ORDER: OrderStatus[] = ["pending","confirmed","packed","shipped","out_for_delivery","delivered"];
 
 function fmtCur(n: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -285,7 +285,7 @@ function OrderCard({ order, index }: { order: Order; index: number }) {
   const cfg = STATUS_CFG[order.status] ?? STATUS_CFG.pending;
   const Icon = cfg.icon;
   const canReturn = order.status === "delivered";
-  const canCancel = ["pending", "confirmed", "processing"].includes(order.status);
+  const canCancel = ["pending", "confirmed", "packed"].includes(order.status);
 
   return (
     <>
@@ -546,7 +546,7 @@ export default function MyOrders() {
   const stats = useMemo(() => ({
     total: orders.length,
     delivered: orders.filter(o => o.status === "delivered").length,
-    active: orders.filter(o => ["pending","confirmed","processing","shipped","out_for_delivery"].includes(o.status)).length,
+    active: orders.filter(o => ["pending","confirmed","packed","shipped","out_for_delivery"].includes(o.status)).length,
     cancelled: orders.filter(o => o.status === "cancelled").length,
   }), [orders]);
 

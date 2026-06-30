@@ -8,8 +8,10 @@ import {
   RefreshCw, LogOut, ChevronDown, Search, User, Phone, Mail,
   MapPin, CreditCard, Calendar, AlertCircle, Star, TrendingUp,
   RotateCcw, Banknote, Edit3, Save, X, Bell, MessageSquare,
-  CheckCircle, ChevronRight, Filter, Github, Loader2, CloudUpload,
+  CheckCircle, ChevronRight, Filter, Github, Loader2, CloudUpload, QrCode,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Link } from "wouter";
 
 const ADMIN_TOKEN = "kasthuribai@admin";
@@ -18,7 +20,7 @@ const ADMIN_TOKEN = "kasthuribai@admin";
 const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string; icon: typeof Clock }> = {
   pending:          { label: "Pending",          color: "#d97706", bg: "rgba(217,119,6,0.1)",   icon: Clock        },
   confirmed:        { label: "Confirmed",        color: "#2563eb", bg: "rgba(37,99,235,0.1)",   icon: CheckCircle2 },
-  processing:       { label: "Processing",       color: "#6d28d9", bg: "rgba(109,40,217,0.1)",  icon: RefreshCw    },
+  packed:           { label: "Packed",           color: "#6d28d9", bg: "rgba(109,40,217,0.1)",  icon: Package      },
   shipped:          { label: "Shipped",          color: "#7c3aed", bg: "rgba(124,58,237,0.1)",  icon: Truck        },
   out_for_delivery: { label: "Out for Delivery", color: "#ea580c", bg: "rgba(234,88,12,0.1)",   icon: Truck        },
   delivered:        { label: "Delivered",        color: "#16a34a", bg: "rgba(22,163,74,0.1)",   icon: Package      },
@@ -366,6 +368,25 @@ export default function AdminDashboard() {
     revenue:   orders.filter(o => !["cancelled","returned"].includes(o.status)).reduce((s, o) => s + o.totalAmount, 0),
   }), [orders]);
 
+  const chartData = useMemo(() => {
+    const days = 7;
+    const now = Date.now();
+    return Array.from({ length: days }, (_, i) => {
+      const dayStart = new Date(now - (days - 1 - i) * 86400000);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart.getTime() + 86400000);
+      const dayOrders = orders.filter(o => {
+        const d = new Date(o.createdAt).getTime();
+        return d >= dayStart.getTime() && d < dayEnd.getTime();
+      });
+      return {
+        day: dayStart.toLocaleDateString("en-IN", { weekday: "short", day: "numeric" }),
+        orders: dayOrders.length,
+        revenue: dayOrders.filter(o => !["cancelled","returned"].includes(o.status)).reduce((s, o) => s + o.totalAmount, 0),
+      };
+    });
+  }, [orders]);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return orders.filter(o => {
@@ -482,6 +503,32 @@ export default function AdminDashboard() {
                     <p style={{ fontSize: 24, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</p>
                   </motion.div>
                 ))}
+              </div>
+
+              {/* Analytics Chart */}
+              <div style={{ borderRadius: 16, padding: "16px 20px", background: "hsl(30,100%,98%)", border: "1px solid rgba(139,94,60,0.1)", boxShadow: "0 2px 8px rgba(139,94,60,0.06)", marginBottom: 20 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "hsl(18,18%,14%)", marginBottom: 14 }}>📊 7-Day Order Trend</p>
+                <ResponsiveContainer width="100%" height={150}>
+                  <AreaChart data={chartData} margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(139,94,60,0.08)" />
+                    <XAxis dataKey="day" tick={{ fontSize: 10, fill: "hsl(25,38%,55%)" }} axisLine={false} tickLine={false} />
+                    <YAxis yAxisId="orders" tick={{ fontSize: 10, fill: "hsl(25,38%,55%)" }} axisLine={false} tickLine={false} width={20} allowDecimals={false} />
+                    <YAxis yAxisId="revenue" orientation="right" tick={{ fontSize: 10, fill: "hsl(25,38%,55%)" }} axisLine={false} tickLine={false} width={52} tickFormatter={(v: number) => `₹${v >= 1000 ? (v/1000).toFixed(0)+"k" : v}`} />
+                    <Tooltip contentStyle={{ fontSize: 11, borderRadius: 10, border: "1px solid rgba(139,94,60,0.15)", background: "#fff", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} formatter={(val: number, name: string) => [name === "revenue" ? `₹${val.toLocaleString("en-IN")}` : val, name === "revenue" ? "Revenue" : "Orders"]} />
+                    <Area yAxisId="orders" type="monotone" dataKey="orders" stroke="#2563eb" fill="rgba(37,99,235,0.07)" strokeWidth={2} dot={{ fill: "#2563eb", r: 3, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                    <Area yAxisId="revenue" type="monotone" dataKey="revenue" stroke="hsl(4,60%,44%)" fill="rgba(181,58,46,0.07)" strokeWidth={2} dot={{ fill: "hsl(4,60%,44%)", r: 3, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+                <div style={{ display: "flex", gap: 16, marginTop: 8, justifyContent: "flex-end" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ width: 10, height: 3, borderRadius: 2, background: "#2563eb" }} />
+                    <span style={{ fontSize: 10, color: "hsl(25,38%,50%)" }}>Orders</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                    <div style={{ width: 10, height: 3, borderRadius: 2, background: "hsl(4,60%,44%)" }} />
+                    <span style={{ fontSize: 10, color: "hsl(25,38%,50%)" }}>Revenue</span>
+                  </div>
+                </div>
               </div>
 
               {/* Filters */}
@@ -606,6 +653,23 @@ export default function AdminDashboard() {
                                   <div style={{ borderTop: "1px solid rgba(139,94,60,0.12)", paddingTop: 7, marginTop: 4, display: "flex", justifyContent: "space-between" }}>
                                     <span style={{ fontSize: 12, fontWeight: 700 }}>Total</span>
                                     <span style={{ fontSize: 14, fontWeight: 800, color: "hsl(4,60%,44%)" }}>₹{order.totalAmount.toLocaleString("en-IN")}</span>
+                                  </div>
+                                </div>
+
+                                {/* QR Code */}
+                                <div>
+                                  <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "hsl(25,38%,50%)", marginBottom: 10 }}>QR Scanner</p>
+                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                    <div style={{ padding: 10, borderRadius: 12, background: "#FFF9F0", border: "1px solid rgba(139,94,60,0.15)", boxShadow: "0 2px 8px rgba(139,94,60,0.08)" }}>
+                                      <QRCodeSVG value={`${window.location.origin}/scan/${order.id}`} size={110} bgColor="#FFF9F0" fgColor="hsl(4,60%,12%)" level="M" />
+                                    </div>
+                                    <p style={{ fontSize: 10, color: "hsl(25,38%,55%)", textAlign: "center" as const, lineHeight: 1.4 }}>
+                                      Scan at packing / shipping counter to advance status automatically
+                                    </p>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 6, background: "rgba(109,40,217,0.08)" }}>
+                                      <QrCode size={10} color="#6d28d9" />
+                                      <p style={{ fontSize: 10, color: "#6d28d9", fontWeight: 600, fontFamily: "monospace" }}>{order.id}</p>
+                                    </div>
                                   </div>
                                 </div>
 

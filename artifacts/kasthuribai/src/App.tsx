@@ -9,8 +9,8 @@ import VideoShopping from "@/pages/VideoShopping";
 import MyOrders from "@/pages/MyOrders";
 import SilverCorner from "@/pages/SilverCorner";
 import AdminDashboard from "@/pages/AdminDashboard";
+import ScanOrder from "@/pages/ScanOrder";
 import NotFound from "@/pages/not-found";
-import { WelcomeAudio } from "@/components/WelcomeAudio";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +24,7 @@ function Router() {
 
       <Route path="/my-orders" component={MyOrders} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/scan/:orderId" component={ScanOrder} />
 
       <Route component={NotFound} />
     </Switch>
@@ -36,7 +37,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <WelcomeAudio />
+            {/* <WelcomeAudio /> — audio disabled */}
             <Router />
           </WouterRouter>
           <Toaster />
