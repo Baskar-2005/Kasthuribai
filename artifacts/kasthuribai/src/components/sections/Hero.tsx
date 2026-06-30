@@ -11,7 +11,7 @@ export function Hero() {
       }}
     >
       <video
-        src="/hero-sm.mp4"
+        src="https://res.cloudinary.com/pmwii8vn/video/upload/v1782815412/Kasthuribai_Hero_Video_1_oarq8n.mp4"
         autoPlay
         muted
         loop
